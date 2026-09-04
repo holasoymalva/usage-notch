@@ -30,7 +30,7 @@ public struct ExpandedShelfView: View {
     }
     
     private var dockHeight: CGFloat {
-        let count = CGFloat(activeProviders.count)
+        let count = CGFloat(activeProviders.count + 1) // Active providers + Ajustes button
         return 48.0 + (count * 64.0) + (max(0, count - 1) * 16.0) + 48.0
     }
     
@@ -53,6 +53,7 @@ public struct ExpandedShelfView: View {
                     guard !Task.isCancelled else { return }
                     withAnimation(.easeOut(duration: 0.2)) {
                         usageManager.selectedProviderId = nil
+                        usageManager.isSettingsPopoverOpen = false
                     }
                 }
             } else {
@@ -147,6 +148,24 @@ public struct ExpandedShelfView: View {
                             }
                         )
                     }
+                    
+                    // ⚙️ Settings / Ajustes button as the last option
+                    SettingsDockButton(
+                        isSelected: usageManager.isSettingsPopoverOpen,
+                        onTap: {
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                usageManager.isSettingsPopoverOpen.toggle()
+                            }
+                        },
+                        onHoverChanged: { isHovered in
+                            if isHovered {
+                                dismissTask?.cancel()
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                    usageManager.isSettingsPopoverOpen = true
+                                }
+                            }
+                        }
+                    )
                 }
                 .padding(.vertical, 48)
                 .frame(width: 74)
@@ -177,9 +196,29 @@ public struct ExpandedShelfView: View {
                     insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .leading)),
                     removal: .opacity
                 ))
+            } else if usageManager.isSettingsPopoverOpen {
+                let settingsIndex = activeProviders.count
+                let gaugeCenterY = 48.0 + CGFloat(settingsIndex) * (64.0 + 16.0) + 22.0
+                let cardTop = max(8.0, min(dockHeight - 220.0, gaugeCenterY - 110.0))
+                let arrowY = max(22.0, gaugeCenterY - cardTop)
+                
+                QuickSettingsPopoverView(
+                    usageManager: usageManager,
+                    arrowY: arrowY,
+                    onClose: {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            usageManager.isSettingsPopoverOpen = false
+                        }
+                    }
+                )
+                .offset(x: 70, y: cardTop)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .leading)),
+                    removal: .opacity
+                ))
             }
         }
-        .frame(width: 420, height: max(dockHeight + 40, 380), alignment: .topLeading)
+        .frame(width: 420, height: max(dockHeight + 60, 420), alignment: .topLeading)
     }
     
     // MARK: - Right Edge Layout
@@ -200,6 +239,26 @@ public struct ExpandedShelfView: View {
                     onClose: {
                         withAnimation(.easeOut(duration: 0.2)) {
                             usageManager.selectedProviderId = nil
+                        }
+                    }
+                )
+                .offset(x: -70, y: cardTop)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .trailing)),
+                    removal: .opacity
+                ))
+            } else if usageManager.isSettingsPopoverOpen {
+                let settingsIndex = activeProviders.count
+                let gaugeCenterY = 48.0 + CGFloat(settingsIndex) * (64.0 + 16.0) + 22.0
+                let cardTop = max(8.0, min(dockHeight - 220.0, gaugeCenterY - 110.0))
+                let arrowY = max(22.0, gaugeCenterY - cardTop)
+                
+                QuickSettingsPopoverView(
+                    usageManager: usageManager,
+                    arrowY: arrowY,
+                    onClose: {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            usageManager.isSettingsPopoverOpen = false
                         }
                     }
                 )
@@ -239,6 +298,24 @@ public struct ExpandedShelfView: View {
                             }
                         )
                     }
+                    
+                    // ⚙️ Settings / Ajustes button as the last option
+                    SettingsDockButton(
+                        isSelected: usageManager.isSettingsPopoverOpen,
+                        onTap: {
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                usageManager.isSettingsPopoverOpen.toggle()
+                            }
+                        },
+                        onHoverChanged: { isHovered in
+                            if isHovered {
+                                dismissTask?.cancel()
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                    usageManager.isSettingsPopoverOpen = true
+                                }
+                            }
+                        }
+                    )
                 }
                 .padding(.vertical, 48)
                 .frame(width: 74)
@@ -248,7 +325,7 @@ public struct ExpandedShelfView: View {
                 contextMenuItems
             }
         }
-        .frame(width: 420, height: max(dockHeight + 40, 380), alignment: .topTrailing)
+        .frame(width: 420, height: max(dockHeight + 60, 420), alignment: .topTrailing)
     }
     
     // MARK: - Top Notch Layout
@@ -281,6 +358,22 @@ public struct ExpandedShelfView: View {
                             }
                         )
                     }
+                    
+                    SettingsDockButton(
+                        isSelected: usageManager.isSettingsPopoverOpen,
+                        onTap: {
+                            withAnimation {
+                                usageManager.isSettingsPopoverOpen.toggle()
+                            }
+                        },
+                        onHoverChanged: { isHovered in
+                            if isHovered {
+                                withAnimation {
+                                    usageManager.isSettingsPopoverOpen = true
+                                }
+                            }
+                        }
+                    )
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 4)
@@ -297,6 +390,14 @@ public struct ExpandedShelfView: View {
                     arrowY: 20,
                     onClose: {
                         withAnimation { usageManager.selectedProviderId = nil }
+                    }
+                )
+            } else if usageManager.isSettingsPopoverOpen {
+                QuickSettingsPopoverView(
+                    usageManager: usageManager,
+                    arrowY: 20,
+                    onClose: {
+                        withAnimation { usageManager.isSettingsPopoverOpen = false }
                     }
                 )
             }

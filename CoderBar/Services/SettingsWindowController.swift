@@ -20,11 +20,12 @@ public final class SettingsWindowController: NSObject, NSWindowDelegate {
         }
         
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 460),
-            styleMask: [.titled, .closable, .miniaturizable],
+            contentRect: NSRect(x: 0, y: 0, width: 840, height: 640),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
+        window.minSize = NSSize(width: 760, height: 560)
         window.center()
         window.title = "Preferencias - Usage Notch"
         window.isReleasedWhenClosed = false

@@ -27,7 +27,20 @@ public final class UsageManager: ObservableObject {
     public static let shared = UsageManager()
     
     @Published public var providers: [ProviderUsage] = []
-    @Published public var selectedProviderId: AIProviderType? = nil
+    @Published public var selectedProviderId: AIProviderType? = nil {
+        didSet {
+            if selectedProviderId != nil {
+                isSettingsPopoverOpen = false
+            }
+        }
+    }
+    @Published public var isSettingsPopoverOpen: Bool = false {
+        didSet {
+            if isSettingsPopoverOpen {
+                selectedProviderId = nil
+            }
+        }
+    }
     
     // Position & Alignment settings
     @Published public var position: NotchPosition = .leftEdge {
@@ -103,101 +116,46 @@ public final class UsageManager: ObservableObject {
             self.isHudVisible = UserDefaults.standard.bool(forKey: "usage_notch_visible")
         }
         
+        var loadedList: [ProviderUsage] = []
         if let data = UserDefaults.standard.data(forKey: storageKey),
            let decoded = try? JSONDecoder().decode([ProviderUsage].self, from: data),
            !decoded.isEmpty {
-            self.providers = decoded
-        } else {
-            self.providers = [
-                ProviderUsage(
-                    id: .antigravity,
-                    isEnabled: true,
-                    primaryLabel: "Current session",
-                    primaryUsedPercent: 0.0, // 100% Remaining
-                    primaryResetIntervalMinutes: 299, // 4h 59m
-                    secondaryLabel: "Weekly",
-                    secondaryUsedPercent: 1.0, // 99% Remaining
-                    currentCount: 100,
-                    maxCount: 100,
-                    unitName: "%"
-                ),
-                ProviderUsage(
-                    id: .codex,
-                    isEnabled: true,
-                    primaryLabel: "Current session",
-                    primaryUsedPercent: 0.0, // 100% Remaining
-                    primaryResetIntervalMinutes: 286, // 4h 46m
-                    secondaryLabel: "Weekly",
-                    secondaryUsedPercent: 46.0, // 54% Remaining
-                    currentCount: 100,
-                    maxCount: 100,
-                    unitName: "%",
-                    tokensToday: "20.3m · $10.92",
-                    tokensMonth: "1.25b · $213.58"
-                ),
-                ProviderUsage(
-                    id: .copilot,
-                    isEnabled: true,
-                    primaryLabel: "Current session",
-                    primaryUsedPercent: 3.0, // 97% Remaining
-                    primaryResetIntervalMinutes: 300,
-                    secondaryLabel: "Weekly",
-                    secondaryUsedPercent: 10.0,
-                    currentCount: 97,
-                    maxCount: 100,
-                    unitName: "%"
-                ),
-                ProviderUsage(
-                    id: .claude,
-                    isEnabled: false,
-                    primaryLabel: "Current session",
-                    primaryUsedPercent: 27.0,
-                    primaryResetIntervalMinutes: 51,
-                    secondaryLabel: "All models",
-                    secondaryUsedPercent: 7.0,
-                    currentCount: 73,
-                    maxCount: 100,
-                    unitName: "%"
-                ),
-                ProviderUsage(
-                    id: .cursor,
-                    isEnabled: false,
-                    primaryLabel: "Fast requests",
-                    primaryUsedPercent: 79.0,
-                    primaryResetIntervalMinutes: 1440 * 12,
-                    secondaryLabel: "Slow requests",
-                    secondaryUsedPercent: 12.0,
-                    currentCount: 105,
-                    maxCount: 500,
-                    unitName: "reqs"
-                ),
-                ProviderUsage(
-                    id: .claudeCode,
-                    isEnabled: false,
-                    primaryLabel: "CLI session",
-                    primaryUsedPercent: 65.0,
-                    primaryResetIntervalMinutes: 180,
-                    secondaryLabel: "Token budget",
-                    secondaryUsedPercent: 28.0,
-                    currentCount: 35000,
-                    maxCount: 100000,
-                    unitName: "tokens"
-                ),
-                ProviderUsage(
-                    id: .kiro,
-                    isEnabled: false,
-                    primaryLabel: "Daily requests",
-                    primaryUsedPercent: 82.0,
-                    primaryResetIntervalMinutes: 720,
-                    secondaryLabel: "Weekly quota",
-                    secondaryUsedPercent: 14.0,
-                    currentCount: 18,
-                    maxCount: 100,
-                    unitName: "reqs"
-                )
-            ]
-            save()
+            loadedList = decoded
         }
+        
+        // Ensure every case in AIProviderType exists in self.providers
+        var finalList: [ProviderUsage] = []
+        for providerType in AIProviderType.allCases {
+            if let existing = loadedList.first(where: { $0.id == providerType }) {
+                finalList.append(existing)
+            } else {
+                let isDefaultEnabled = (providerType == .antigravity || providerType == .codex)
+                let newUsage = ProviderUsage(
+                    id: providerType,
+                    isEnabled: isDefaultEnabled,
+                    primaryLabel: "Current session",
+                    primaryUsedPercent: 0.0,
+                    primaryResetIntervalMinutes: providerType == .antigravity ? 299 : 286,
+                    secondaryLabel: "Weekly",
+                    secondaryUsedPercent: providerType == .codex ? 46.0 : 1.0,
+                    tokensToday: providerType == .codex ? "20.3m · $10.92" : nil,
+                    tokensMonth: providerType == .codex ? "1.25b · $213.58" : nil
+                )
+                finalList.append(newUsage)
+            }
+        }
+        
+        // If copilot was enabled only by old default without custom credentials, disable it
+        if let copilotIdx = finalList.firstIndex(where: { $0.id == .copilot }) {
+            let c = finalList[copilotIdx]
+            let hasCreds = !c.apiKeyOrToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            if !hasCreds {
+                finalList[copilotIdx].isEnabled = false
+            }
+        }
+        
+        self.providers = finalList
+        save()
     }
     
     public func save() {
@@ -219,6 +177,7 @@ public final class UsageManager: ObservableObject {
             isExpanded.toggle()
             if !isExpanded {
                 selectedProviderId = nil
+                isSettingsPopoverOpen = false
             }
         }
     }
@@ -228,6 +187,7 @@ public final class UsageManager: ObservableObject {
             withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                 isExpanded = false
                 selectedProviderId = nil
+                isSettingsPopoverOpen = false
             }
         }
     }

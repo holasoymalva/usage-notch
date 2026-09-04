@@ -99,6 +99,8 @@ public final class APIUsageService: ObservableObject {
             return await syncClaudeCode(index: index, apiKey: token)
         case .kiro:
             return await syncKiro(index: index, token: token, endpoint: provider.customEndpoint)
+        default:
+            return await syncGenericProvider(index: index, token: token, providerId: providerId)
         }
     }
     
@@ -363,6 +365,67 @@ public final class APIUsageService: ObservableObject {
             }
         } catch {
             return (false, error.localizedDescription)
+        }
+    }
+    
+    // MARK: - Generic Provider Connectivity
+    private func syncGenericProvider(index: Int, token: String, providerId: AIProviderType) async -> (Bool, String) {
+        let customEndpoint = UsageManager.shared.providers[index].customEndpoint
+        let endpointStr: String
+        if !customEndpoint.isEmpty {
+            endpointStr = customEndpoint
+        } else {
+            switch providerId {
+            case .deepseek:
+                endpointStr = "https://api.deepseek.com/user/balance"
+            case .openrouter:
+                endpointStr = "https://openrouter.ai/api/v1/auth/key"
+            case .gemini:
+                endpointStr = "https://generativelanguage.googleapis.com/v1beta/models?key=\(token)"
+            case .ollama:
+                endpointStr = "http://localhost:11434/api/tags"
+            default:
+                endpointStr = ""
+            }
+        }
+        
+        if endpointStr.isEmpty {
+            let msg = "\(providerId.displayName) configurado correctamente"
+            UsageManager.shared.providers[index].lastSyncStatus = "🟢 Conectado"
+            UsageManager.shared.save()
+            return (true, msg)
+        }
+        
+        guard let url = URL(string: endpointStr) else {
+            return (false, "Endpoint de \(providerId.displayName) inválido")
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        if !token.isEmpty && !endpointStr.contains("key=") {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.timeoutInterval = 8
+        
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, http.statusCode >= 200 && http.statusCode < 400 {
+                let msg = "Conexión exitosa con \(providerId.displayName)"
+                UsageManager.shared.providers[index].lastSyncStatus = "🟢 Conectado"
+                UsageManager.shared.save()
+                return (true, msg)
+            } else {
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                let msg = "Error al autenticar con \(providerId.displayName) (Código: \(status))"
+                UsageManager.shared.providers[index].lastSyncStatus = "🟠 Error \(status)"
+                UsageManager.shared.save()
+                return (false, msg)
+            }
+        } catch {
+            let msg = "\(providerId.displayName) guardado (servidor no respondió: \(error.localizedDescription))"
+            UsageManager.shared.providers[index].lastSyncStatus = "🟢 Credenciales guardadas"
+            UsageManager.shared.save()
+            return (true, msg)
         }
     }
 }

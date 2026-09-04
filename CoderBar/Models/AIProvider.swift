@@ -5,26 +5,137 @@
 
 import SwiftUI
 
+public enum AuthMethod: String, Codable, CaseIterable {
+    case oauth = "OAuth"
+    case apiKey = "API key"
+    case cookies = "Cookies"
+    case cookiesGo = "Cookies + Go"
+    case local = "Local"
+    case cli = "CLI"
+    case bearerLocal = "Bearer / Local"
+    case token = "Token"
+    case gcloud = "gcloud"
+    case apiKeyCookies = "API key + Cookies"
+    case virtualKey = "Virtual key"
+    case deviceFlow = "Device flow"
+    case custom = "guía de autoría ↗"
+}
+
+public enum ProviderCategory: String, Codable, CaseIterable, Identifiable {
+    case all = "Todos"
+    case active = "Activos"
+    case llm = "Modelos LLM"
+    case ide = "IDEs y Editores"
+    case agent = "Agentes"
+    case infra = "Infraestructura"
+    
+    public var id: String { rawValue }
+}
+
 public enum AIProviderType: String, CaseIterable, Codable, Identifiable {
-    case antigravity = "Antigravity"
+    // Row 1
     case codex = "Codex"
-    case copilot = "Copilot"
     case claude = "Claude"
     case cursor = "Cursor"
-    case claudeCode = "Claude Code"
+    case opencode = "OpenCode"
+    case alibaba = "Alibaba"
+    
+    // Row 2
+    case alibabaToken = "Alibaba Token"
+    case gemini = "Gemini"
+    case antigravity = "Antigravity"
+    case droid = "Droid"
+    case copilot = "Copilot"
+    
+    // Row 3
+    case devin = "Devin"
+    case zai = "z.ai"
+    case minimax = "MiniMax"
+    case kimi = "Kimi"
+    case kilo = "Kilo"
+    
+    // Row 4
     case kiro = "Kiro"
+    case vertexAI = "Vertex AI"
+    case augment = "Augment"
+    case amp = "Amp"
+    case ollama = "Ollama"
+    
+    // Row 5
+    case synthetic = "Synthetic"
+    case jetbrains = "JetBrains AI"
+    case warp = "Warp"
+    case elevenlabs = "ElevenLabs"
+    case openrouter = "OpenRouter"
+    
+    // Row 6
+    case litellm = "LiteLLM"
+    case perplexity = "Perplexity"
+    case abacus = "Abacus AI"
+    case mistral = "Mistral"
+    case deepseek = "DeepSeek"
+    
+    // Row 7
+    case deepinfra = "DeepInfra"
+    case t3chat = "T3 Chat"
+    case codebuff = "Codebuff"
+    case poe = "Poe"
+    case chutes = "Chutes"
+    
+    // Row 8
+    case zed = "Zed"
+    case claudeCode = "Claude Code"
+    case custom = "Tu proveedor"
     
     public var id: String { rawValue }
     
     public var displayName: String {
+        return rawValue
+    }
+    
+    public var authMethod: AuthMethod {
         switch self {
-        case .antigravity: return "Antigravity"
-        case .codex: return "Codex"
-        case .copilot: return "Copilot"
-        case .claude: return "Claude"
-        case .cursor: return "Cursor"
-        case .claudeCode: return "Claude Code"
-        case .kiro: return "Kiro"
+        case .codex, .claude, .gemini:
+            return .oauth
+        case .cursor, .alibaba, .alibabaToken, .droid, .amp, .perplexity, .abacus, .mistral, .t3chat:
+            return .cookies
+        case .opencode:
+            return .cookiesGo
+        case .antigravity, .jetbrains, .zed:
+            return .local
+        case .copilot:
+            return .deviceFlow
+        case .devin:
+            return .bearerLocal
+        case .kiro, .augment:
+            return .cli
+        case .vertexAI:
+            return .gcloud
+        case .kimi:
+            return .token
+        case .ollama:
+            return .apiKeyCookies
+        case .litellm:
+            return .virtualKey
+        case .custom:
+            return .custom
+        default:
+            return .apiKey
+        }
+    }
+    
+    public var category: ProviderCategory {
+        switch self {
+        case .codex, .claude, .gemini, .alibaba, .alibabaToken, .minimax, .kimi, .ollama, .perplexity, .abacus, .mistral, .deepseek, .poe:
+            return .llm
+        case .cursor, .opencode, .kilo, .augment, .jetbrains, .warp, .zed:
+            return .ide
+        case .antigravity, .droid, .copilot, .devin, .kiro, .amp, .t3chat, .codebuff, .claudeCode:
+            return .agent
+        case .zai, .vertexAI, .synthetic, .elevenlabs, .openrouter, .litellm, .deepinfra, .chutes:
+            return .infra
+        case .custom:
+            return .all
         }
     }
     
@@ -37,21 +148,39 @@ public enum AIProviderType: String, CaseIterable, Codable, Identifiable {
         case .cursor: return "Fast & Slow Requests (Cursor API)"
         case .claudeCode: return "Terminal Agent Token Budget"
         case .kiro: return "Dev Assistant & Custom API"
+        case .deepseek: return "DeepSeek V3 / R1 API"
+        case .gemini: return "Google Gemini Pro & Flash"
+        case .ollama: return "Ollama Local & Cloud"
+        case .openrouter: return "OpenRouter Unified API"
+        case .perplexity: return "Perplexity Pro & API"
+        case .mistral: return "Mistral Large & Codestral"
+        case .jetbrains: return "JetBrains AI Assistant"
+        case .warp: return "Warp Terminal Agent"
+        case .zed: return "Zed Editor AI"
+        case .devin: return "Cognition Devin Autonomous Agent"
+        case .custom: return "Proxy o endpoint personalizado"
+        default: return "\(displayName) Provider API"
         }
     }
     
     public var defaultAccentColor: Color {
         switch self {
         case .antigravity, .codex, .copilot:
-            return Color(red: 0.05, green: 0.90, blue: 0.48) // Electric emerald green
+            return Color(red: 0.05, green: 0.90, blue: 0.48)
         case .claude:
-            return Color(red: 0.94, green: 0.45, blue: 0.28) // Warm Anthropic terracotta / orange
+            return Color(red: 0.94, green: 0.45, blue: 0.28)
         case .cursor:
-            return Color(red: 0.16, green: 0.65, blue: 0.98) // Bright Cursor blue
-        case .claudeCode:
-            return Color(red: 0.20, green: 0.85, blue: 0.65) // Terminal cyan/mint
-        case .kiro:
-            return Color(red: 0.75, green: 0.45, blue: 0.95) // Purple accent
+            return Color(red: 0.16, green: 0.65, blue: 0.98)
+        case .deepseek:
+            return Color(red: 0.22, green: 0.55, blue: 0.98)
+        case .gemini:
+            return Color(red: 0.35, green: 0.60, blue: 0.98)
+        case .mistral:
+            return Color(red: 0.98, green: 0.45, blue: 0.15)
+        case .ollama:
+            return Color(white: 0.90)
+        default:
+            return Color(red: 0.05, green: 0.90, blue: 0.48)
         }
     }
 }

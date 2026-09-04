@@ -191,13 +191,133 @@ public struct ProviderBrandIcon: View {
             ClaudeStarburstIcon(size: size, color: color)
         case .cursor:
             IsometricCubeIcon(size: size, color: color)
-        case .claudeCode:
-            Image(systemName: "terminal.fill")
-                .font(.system(size: size * 0.65, weight: .semibold))
+        case .gemini:
+            Image(systemName: "sparkle")
+                .font(.system(size: size * 0.85, weight: .bold))
+                .foregroundColor(color)
+        case .deepseek:
+            Image(systemName: "water.waves")
+                .font(.system(size: size * 0.75, weight: .bold))
+                .foregroundColor(color)
+        case .opencode:
+            Image(systemName: "sidebar.squares.left")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .alibaba, .alibabaToken:
+            Image(systemName: "infinity")
+                .font(.system(size: size * 0.8, weight: .bold))
+                .foregroundColor(color)
+        case .droid:
+            Image(systemName: "circle.hexagongrid.fill")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .devin:
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .zai:
+            Image(systemName: "z.circle.fill")
+                .font(.system(size: size * 0.8, weight: .bold))
+                .foregroundColor(color)
+        case .minimax:
+            Image(systemName: "waveform")
+                .font(.system(size: size * 0.8, weight: .semibold))
+                .foregroundColor(color)
+        case .kimi:
+            Image(systemName: "k.circle.fill")
+                .font(.system(size: size * 0.8, weight: .bold))
+                .foregroundColor(color)
+        case .kilo:
+            Image(systemName: "character.textbox")
+                .font(.system(size: size * 0.75, weight: .semibold))
                 .foregroundColor(color)
         case .kiro:
             Image(systemName: "bolt.shield.fill")
                 .font(.system(size: size * 0.7, weight: .semibold))
+                .foregroundColor(color)
+        case .vertexAI:
+            Image(systemName: "point.3.connected.trianglepath.dotted")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .augment:
+            Image(systemName: "curlybraces")
+                .font(.system(size: size * 0.8, weight: .bold))
+                .foregroundColor(color)
+        case .amp:
+            Image(systemName: "antenna.radiowaves.left.and.right")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .ollama:
+            Image(systemName: "pawprint.fill")
+                .font(.system(size: size * 0.75, weight: .bold))
+                .foregroundColor(color)
+        case .synthetic:
+            Image(systemName: "atom")
+                .font(.system(size: size * 0.8, weight: .semibold))
+                .foregroundColor(color)
+        case .jetbrains:
+            Image(systemName: "command.square.fill")
+                .font(.system(size: size * 0.8, weight: .semibold))
+                .foregroundColor(color)
+        case .warp:
+            Image(systemName: "rectangle.on.rectangle")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .elevenlabs:
+            Image(systemName: "lines.measurement.horizontal")
+                .font(.system(size: size * 0.75, weight: .bold))
+                .foregroundColor(color)
+        case .openrouter:
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: size * 0.75, weight: .bold))
+                .foregroundColor(color)
+        case .litellm:
+            Image(systemName: "point.3.filled.connected.trianglepath.dotted")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .perplexity:
+            Image(systemName: "asterisk")
+                .font(.system(size: size * 0.8, weight: .heavy))
+                .foregroundColor(color)
+        case .abacus:
+            Image(systemName: "slider.vertical.3")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .mistral:
+            Image(systemName: "building.columns.fill")
+                .font(.system(size: size * 0.75, weight: .bold))
+                .foregroundColor(color)
+        case .deepinfra:
+            Image(systemName: "network")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .t3chat:
+            Image(systemName: "bubble.left.and.bubble.right.fill")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .codebuff:
+            Image(systemName: "hexagon.fill")
+                .font(.system(size: size * 0.8, weight: .bold))
+                .foregroundColor(color)
+        case .poe:
+            Image(systemName: "bubble.middle.bottom.fill")
+                .font(.system(size: size * 0.8, weight: .bold))
+                .foregroundColor(color)
+        case .chutes:
+            Image(systemName: "umbrella.fill")
+                .font(.system(size: size * 0.75, weight: .semibold))
+                .foregroundColor(color)
+        case .zed:
+            Image(systemName: "z.square.fill")
+                .font(.system(size: size * 0.8, weight: .bold))
+                .foregroundColor(color)
+        case .claudeCode:
+            Image(systemName: "terminal.fill")
+                .font(.system(size: size * 0.65, weight: .semibold))
+                .foregroundColor(color)
+        case .custom:
+            Image(systemName: "square.3.layers.3d.down.right")
+                .font(.system(size: size * 0.75, weight: .semibold))
                 .foregroundColor(color)
         }
     }
