@@ -146,6 +146,26 @@ public struct SettingsView: View {
         Section("Credenciales de la API") {
             VStack(alignment: .leading, spacing: 6) {
                 switch provider.id {
+                case .codex:
+                    Text("OpenAI API Key (Codex):")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                    SecureField("sk-proj-... o sk-...", text: $usageManager.providers[index].apiKeyOrToken)
+                        .textFieldStyle(.roundedBorder)
+                    Text("Monitorea el uso de tokens y consumo de OpenAI Codex.")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    
+                case .copilot:
+                    Text("GitHub Token (Copilot):")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                    SecureField("gho_... o ghp_...", text: $usageManager.providers[index].apiKeyOrToken)
+                        .textFieldStyle(.roundedBorder)
+                    Text("Monitorea la cuota y estado activo de GitHub Copilot.")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    
                 case .cursor:
                     Text("Cookie de Sesión Cursor (WorkosCursorSessionToken):")
                         .font(.caption)

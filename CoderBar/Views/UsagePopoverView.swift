@@ -8,198 +8,218 @@ import SwiftUI
 public struct UsagePopoverView: View {
     @ObservedObject var usageManager: UsageManager
     public var usage: ProviderUsage
-    public var onClose: () -> Void
+    public var arrowY: CGFloat = 40.0
+    public var onClose: () -> Void = {}
     
-    @State private var isAdjusting: Bool = false
-    
-    private var primaryBarGradient: LinearGradient {
-        let pct = usage.primaryUsedPercent
-        if pct >= 80 {
-            return LinearGradient(
-                colors: [Color(red: 0.98, green: 0.45, blue: 0.22), Color(red: 0.96, green: 0.25, blue: 0.25)],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        } else if pct >= 50 {
-            return LinearGradient(
-                colors: [Color(red: 0.98, green: 0.58, blue: 0.24), Color(red: 0.95, green: 0.40, blue: 0.20)],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        } else {
-            return LinearGradient(
-                colors: [Color(red: 0.22, green: 0.82, blue: 0.52), Color(red: 0.18, green: 0.72, blue: 0.45)],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        }
+    public init(
+        usageManager: UsageManager,
+        usage: ProviderUsage,
+        arrowY: CGFloat = 40.0,
+        onClose: @escaping () -> Void = {}
+    ) {
+        self.usageManager = usageManager
+        self.usage = usage
+        self.arrowY = arrowY
+        self.onClose = onClose
     }
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            // Header: Icon + Name + Close
-            HStack(spacing: 9) {
+            // Header: Brand Icon + Provider Title + Reset in Xh Ym
+            HStack(alignment: .top, spacing: 9) {
                 ProviderBrandIcon(
                     provider: usage.id,
                     size: 20,
                     color: .white
                 )
+                .padding(.top, 1)
                 
                 Text("\(usage.id.displayName) Usage")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                Spacer(minLength: 8)
+                
+                Text(usage.headerResetString)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundColor(Color.white.opacity(0.62))
+                    .padding(.top, 1)
+            }
+            
+            // Section 1: Current session
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Current session")
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
                 
-                Spacer()
-                
-                Button(action: { isAdjusting.toggle() }) {
-                    Image(systemName: isAdjusting ? "slider.horizontal.3" : "slider.horizontal.2")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(isAdjusting ? usage.id.defaultAccentColor : Color.white.opacity(0.45))
-                }
-                .buttonStyle(.plain)
-                .help("Ajustar consumo manualmente")
-                
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color.white.opacity(0.4))
-                }
-                .buttonStyle(.plain)
-            }
-            
-            // Metric 1: Current session
-            VStack(alignment: .leading, spacing: 6) {
-                Text(usage.primaryLabel)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.65))
-                
-                // Progress Bar
+                // Thin progress bar
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule()
                             .fill(Color.white.opacity(0.12))
-                            .frame(height: 7)
+                            .frame(height: 4.5)
                         
+                        let pct = usage.primaryRemainingPercent / 100.0
                         Capsule()
-                            .fill(primaryBarGradient)
-                            .frame(width: max(7, geo.size.width * CGFloat(min(100.0, usage.primaryUsedPercent) / 100.0)), height: 7)
-                            .shadow(color: Color.orange.opacity(0.35), radius: 4, x: 0, y: 0)
+                            .fill(Color(red: 0.05, green: 0.90, blue: 0.48))
+                            .frame(width: max(4.5, geo.size.width * CGFloat(min(1.0, max(0.0, pct)))), height: 4.5)
                     }
                 }
-                .frame(height: 7)
+                .frame(height: 4.5)
                 
                 HStack {
-                    Text("\(Int(usage.primaryUsedPercent))% Used")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.9))
+                    Text("\(Int(usage.primaryRemainingPercent))% Remaining")
+                        .font(.system(size: 11.5, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.72))
                     
                     Spacer()
                     
-                    Text(usage.primaryTimeRemainingString)
-                        .font(.system(size: 11, weight: .regular))
+                    Text(usage.primaryResetTimeString)
+                        .font(.system(size: 11.5, weight: .regular))
                         .foregroundColor(Color.white.opacity(0.55))
                 }
             }
             
-            // Metric 2: Secondary (All models / Monthly)
+            // Section 2: Weekly
             VStack(alignment: .leading, spacing: 6) {
-                Text(usage.secondaryLabel)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.65))
+                Text("Weekly")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
                 
-                // Progress Bar (Greenish)
+                // Thin progress bar
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule()
                             .fill(Color.white.opacity(0.12))
-                            .frame(height: 7)
+                            .frame(height: 4.5)
                         
+                        let pct = usage.secondaryRemainingPercent / 100.0
                         Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color(red: 0.20, green: 0.85, blue: 0.55), Color(red: 0.16, green: 0.70, blue: 0.45)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: max(7, geo.size.width * CGFloat(min(100.0, usage.secondaryUsedPercent) / 100.0)), height: 7)
+                            .fill(Color(red: 0.05, green: 0.90, blue: 0.48))
+                            .frame(width: max(4.5, geo.size.width * CGFloat(min(1.0, max(0.0, pct)))), height: 4.5)
                     }
                 }
-                .frame(height: 7)
+                .frame(height: 4.5)
                 
                 HStack {
-                    Text("\(Int(usage.secondaryUsedPercent))% Used")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.9))
+                    Text("\(Int(usage.secondaryRemainingPercent))% Remaining")
+                        .font(.system(size: 11.5, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.72))
                     
                     Spacer()
                     
-                    Text(usage.secondaryResetString)
-                        .font(.system(size: 11, weight: .regular))
+                    Text(usage.secondaryResetTimeString)
+                        .font(.system(size: 11.5, weight: .regular))
                         .foregroundColor(Color.white.opacity(0.55))
                 }
             }
             
-            // Quick Adjust Panel (if toggled)
-            if isAdjusting {
-                Divider().background(Color.white.opacity(0.15))
-                
-                VStack(spacing: 8) {
+            // Section 3: Token usage (e.g. for Codex)
+            if usage.id == .codex || usage.tokensToday != nil {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text("Token usage")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                    
                     HStack {
-                        Text("Simular/Ajustar uso:")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.6))
+                        Text("Today")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color.white.opacity(0.72))
                         Spacer()
-                        Text("\(Int(usage.primaryUsedPercent))%")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(usage.id.defaultAccentColor)
+                        Text(usage.tokensToday ?? "20.3m · $10.92")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
                     }
                     
-                    Slider(
-                        value: Binding(
-                            get: { usage.primaryUsedPercent },
-                            set: { usageManager.updateUsage(for: usage.id, primaryPercent: $0) }
-                        ),
-                        in: 0...100
-                    )
-                    .tint(usage.id.defaultAccentColor)
-                    
-                    HStack(spacing: 8) {
-                        Button("+5%") {
-                            usageManager.adjustUsage(for: usage.id, delta: 5.0)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Button("+15%") {
-                            usageManager.adjustUsage(for: usage.id, delta: 15.0)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
+                    HStack {
+                        Text("Last 30 days")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color.white.opacity(0.72))
                         Spacer()
-                        
-                        Button("Reiniciar sesión") {
-                            usageManager.resetSession(for: usage.id)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(Color.white.opacity(0.18))
-                        .controlSize(.small)
+                        Text(usage.tokensMonth ?? "1.25b · $213.58")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
                     }
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(14)
-        .frame(width: 260)
+        .padding(.leading, usageManager.position != .rightEdge ? 22 : 16)
+        .padding(.trailing, usageManager.position == .rightEdge ? 22 : 16)
+        .padding(.vertical, 16)
+        .frame(width: 315)
         .background(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .fill(Color(red: 0.08, green: 0.08, blue: 0.09).opacity(0.96))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            ZStack {
+                // 1. Native macOS frosted blur
+                PopoverBezelShape(
+                    arrowPosition: usageManager.position,
+                    arrowY: arrowY,
+                    arrowWidth: 8,
+                    arrowHeight: 14,
+                    cornerRadius: 19
                 )
-                .shadow(color: Color.black.opacity(0.5), radius: 16, x: 0, y: 8)
+                .fill(.ultraThinMaterial)
+                .environment(\.colorScheme, .dark)
+                
+                // 2. Translucent deep black glass with subtle gradient
+                PopoverBezelShape(
+                    arrowPosition: usageManager.position,
+                    arrowY: arrowY,
+                    arrowWidth: 8,
+                    arrowHeight: 14,
+                    cornerRadius: 19
+                )
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color(white: 0.15).opacity(0.85), location: 0.0),
+                            .init(color: Color(white: 0.07).opacity(0.90), location: 0.5),
+                            .init(color: Color(white: 0.03).opacity(0.95), location: 1.0)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                
+                // 3. Subtle top specular glass reflection
+                PopoverBezelShape(
+                    arrowPosition: usageManager.position,
+                    arrowY: arrowY,
+                    arrowWidth: 8,
+                    arrowHeight: 14,
+                    cornerRadius: 19
+                )
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.08), Color.clear],
+                        startPoint: .top,
+                        endPoint: .center
+                    )
+                )
+            }
+            .overlay(
+                PopoverBezelShape(
+                    arrowPosition: usageManager.position,
+                    arrowY: arrowY,
+                    arrowWidth: 8,
+                    arrowHeight: 14,
+                    cornerRadius: 19
+                )
+                .stroke(
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color.white.opacity(0.35), location: 0.0),
+                            .init(color: Color.white.opacity(0.16), location: 0.4),
+                            .init(color: Color.white.opacity(0.08), location: 1.0)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+            )
+            .shadow(color: Color.black.opacity(0.58), radius: 24, x: 0, y: 10)
         )
     }
 }

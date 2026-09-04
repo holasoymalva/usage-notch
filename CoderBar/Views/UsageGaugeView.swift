@@ -9,74 +9,86 @@ public struct UsageGaugeView: View {
     public var usage: ProviderUsage
     public var isSelected: Bool
     public var onTap: () -> Void
+    public var onHoverChanged: ((Bool) -> Void)? = nil
     
     @State private var isHovering: Bool = false
     
-    // Dynamic ring color based on percentage or provider theme
+    private var displayPercent: Double {
+        usage.primaryRemainingPercent
+    }
+    
     private var ringColor: Color {
-        let pct = usage.primaryUsedPercent
-        if pct >= 85 {
-            return Color(red: 0.98, green: 0.32, blue: 0.28) // Urgent red/coral
-        } else if pct >= 65 {
-            return Color(red: 0.96, green: 0.52, blue: 0.22) // Warning orange (as in Claude 73%)
-        } else if pct >= 40 {
-            return Color(red: 0.95, green: 0.82, blue: 0.24) // Yellow/gold (as in 52%)
+        let pct = displayPercent
+        if pct <= 15 {
+            return Color(red: 0.98, green: 0.32, blue: 0.28) // Urgent red when almost depleted
+        } else if pct <= 35 {
+            return Color(red: 0.96, green: 0.65, blue: 0.22) // Warning amber
         } else {
-            return Color(red: 0.24, green: 0.86, blue: 0.56) // Healthy green (as in 21%)
+            return Color(red: 0.05, green: 0.90, blue: 0.48) // Electric emerald green (exact match to mockup)
         }
     }
     
     public var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 5) {
+            VStack(spacing: 4) {
                 ZStack {
                     // Background track ring
                     Circle()
-                        .stroke(Color.white.opacity(0.12), lineWidth: 3.5)
+                        .stroke(Color.white.opacity(0.10), lineWidth: 3.5)
                         .frame(width: 44, height: 44)
                     
-                    // Active progress ring
+                    // Active progress ring (Remaining quota)
                     Circle()
-                        .trim(from: 0.0, to: CGFloat(min(1.0, max(0.0, usage.primaryUsedPercent / 100.0))))
+                        .trim(from: 0.0, to: CGFloat(min(1.0, max(0.0, displayPercent / 100.0))))
                         .stroke(
                             ringColor,
                             style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
                         )
                         .rotationEffect(.degrees(-90))
                         .frame(width: 44, height: 44)
-                        .animation(.spring(response: 0.5, dampingFraction: 0.75), value: usage.primaryUsedPercent)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: displayPercent)
                     
-                    // Inner disc
+                    // Inner dark disc (pure dark glass with gradient, no teal)
                     Circle()
-                        .fill(Color.black.opacity(0.85))
-                        .frame(width: 36, height: 36)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(white: 0.13).opacity(0.92),
+                                    Color(white: 0.04).opacity(0.98)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: 35, height: 35)
                         .overlay(
                             Circle()
-                                .stroke(Color.white.opacity(isSelected ? 0.3 : 0.08), lineWidth: 1)
+                                .stroke(Color.white.opacity(isSelected ? 0.30 : 0.09), lineWidth: 1)
                         )
                     
-                    // Brand Icon
+                    // Provider Brand Icon
                     ProviderBrandIcon(
                         provider: usage.id,
                         size: 19,
                         color: .white
                     )
                 }
-                .shadow(color: ringColor.opacity(isSelected || isHovering ? 0.45 : 0.15), radius: 6, x: 0, y: 0)
+                .shadow(color: ringColor.opacity(isSelected || isHovering ? 0.4 : 0.1), radius: 5, x: 0, y: 0)
                 
-                // Percentage text label below
-                Text("\(Int(usage.primaryUsedPercent))%")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(isSelected ? .white : Color.white.opacity(0.85))
+                // Bold percentage label below ring
+                Text("\(Int(displayPercent))%")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(isSelected || isHovering ? .white : Color.white.opacity(0.92))
             }
-            .scaleEffect(isHovering || isSelected ? 1.06 : 1.0)
-            .animation(.easeInOut(duration: 0.18), value: isHovering)
-            .animation(.easeInOut(duration: 0.18), value: isSelected)
+            .scaleEffect(isHovering || isSelected ? 1.05 : 1.0)
+            .animation(.easeInOut(duration: 0.16), value: isHovering)
+            .animation(.easeInOut(duration: 0.16), value: isSelected)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hover in
             isHovering = hover
+            onHoverChanged?(hover)
         }
     }
 }

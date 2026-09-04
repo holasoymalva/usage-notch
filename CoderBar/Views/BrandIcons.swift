@@ -102,6 +102,78 @@ public struct IsometricCubeIcon: View {
     }
 }
 
+public struct AntigravityArchIcon: View {
+    public var size: CGFloat = 20
+    public var color: Color = .white
+    
+    public init(size: CGFloat = 20, color: Color = .white) {
+        self.size = size
+        self.color = color
+    }
+    
+    public var body: some View {
+        Canvas { context, sz in
+            let w = sz.width
+            let h = sz.height
+            var path = Path()
+            // Symmetrical upward arch with flared feet
+            path.move(to: CGPoint(x: w * 0.23, y: h * 0.82))
+            path.addQuadCurve(to: CGPoint(x: w * 0.50, y: h * 0.20), control: CGPoint(x: w * 0.27, y: h * 0.35))
+            path.addQuadCurve(to: CGPoint(x: w * 0.77, y: h * 0.82), control: CGPoint(x: w * 0.73, y: h * 0.35))
+            
+            context.stroke(
+                path,
+                with: .color(color),
+                style: StrokeStyle(lineWidth: w * 0.21, lineCap: .round, lineJoin: .round)
+            )
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+public struct CopilotIcon: View {
+    public var size: CGFloat = 20
+    public var color: Color = .white
+    
+    public init(size: CGFloat = 20, color: Color = .white) {
+        self.size = size
+        self.color = color
+    }
+    
+    public var body: some View {
+        Canvas { context, sz in
+            let w = sz.width
+            let h = sz.height
+            
+            // Helmet / Head contour
+            let headRect = CGRect(x: w * 0.20, y: h * 0.20, width: w * 0.60, height: h * 0.58)
+            let headPath = Path(roundedRect: headRect, cornerRadius: w * 0.24)
+            context.stroke(headPath, with: .color(color), lineWidth: w * 0.09)
+            
+            // Left & Right earcups / headphones
+            let leftEar = Path(roundedRect: CGRect(x: w * 0.08, y: h * 0.35, width: w * 0.12, height: h * 0.30), cornerRadius: w * 0.06)
+            context.fill(leftEar, with: .color(color))
+            
+            let rightEar = Path(roundedRect: CGRect(x: w * 0.80, y: h * 0.35, width: w * 0.12, height: h * 0.30), cornerRadius: w * 0.06)
+            context.fill(rightEar, with: .color(color))
+            
+            // Visor across the face
+            let visorRect = CGRect(x: w * 0.27, y: h * 0.40, width: w * 0.46, height: h * 0.20)
+            let visorPath = Path(roundedRect: visorRect, cornerRadius: w * 0.10)
+            context.stroke(visorPath, with: .color(color), lineWidth: w * 0.08)
+            
+            // Two glowing eyes inside visor
+            let eyeRadius = w * 0.042
+            let leftEye = Path(ellipseIn: CGRect(x: w * 0.37 - eyeRadius, y: h * 0.50 - eyeRadius, width: eyeRadius * 2, height: eyeRadius * 2))
+            context.fill(leftEye, with: .color(color))
+            
+            let rightEye = Path(ellipseIn: CGRect(x: w * 0.63 - eyeRadius, y: h * 0.50 - eyeRadius, width: eyeRadius * 2, height: eyeRadius * 2))
+            context.fill(rightEye, with: .color(color))
+        }
+        .frame(width: size, height: size)
+    }
+}
+
 public struct ProviderBrandIcon: View {
     public var provider: AIProviderType
     public var size: CGFloat = 20
@@ -109,13 +181,15 @@ public struct ProviderBrandIcon: View {
     
     public var body: some View {
         switch provider {
+        case .antigravity:
+            AntigravityArchIcon(size: size, color: color)
+        case .codex:
+            OpenAISpiralIcon(size: size, color: color)
+        case .copilot:
+            CopilotIcon(size: size, color: color)
         case .claude:
             ClaudeStarburstIcon(size: size, color: color)
         case .cursor:
-            Image(systemName: "chevron.right")
-                .font(.system(size: size * 0.7, weight: .bold))
-                .foregroundColor(color)
-        case .antigravity:
             IsometricCubeIcon(size: size, color: color)
         case .claudeCode:
             Image(systemName: "terminal.fill")

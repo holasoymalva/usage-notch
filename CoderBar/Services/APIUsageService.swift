@@ -85,12 +85,16 @@ public final class APIUsageService: ObservableObject {
         }
         
         switch providerId {
+        case .antigravity:
+            return await syncAntigravity(index: index, apiKey: token)
+        case .codex:
+            return await syncCodex(index: index, apiKey: token)
+        case .copilot:
+            return await syncCopilot(index: index, token: token)
         case .cursor:
             return await syncCursor(index: index, token: token)
         case .claude:
             return await syncClaude(index: index, apiKey: token)
-        case .antigravity:
-            return await syncAntigravity(index: index, apiKey: token)
         case .claudeCode:
             return await syncClaudeCode(index: index, apiKey: token)
         case .kiro:
@@ -249,6 +253,81 @@ public final class APIUsageService: ObservableObject {
             }
         } catch {
             return (false, error.localizedDescription)
+        }
+    }
+    
+    // MARK: - OpenAI / Codex API
+    private func syncCodex(index: Int, apiKey: String) async -> (Bool, String) {
+        guard let url = URL(string: "https://api.openai.com/v1/models") else {
+            return (false, "URL inválida")
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 10
+        
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return (false, "Sin respuesta de OpenAI")
+            }
+            
+            if httpResponse.statusCode == 200 {
+                UsageManager.shared.providers[index].lastSyncStatus = "🟢 Conectado"
+                UsageManager.shared.save()
+                return (true, "OpenAI Codex conectado con éxito.")
+            } else if httpResponse.statusCode == 401 {
+                let msg = "API Key de OpenAI inválida (401)"
+                UsageManager.shared.providers[index].lastSyncStatus = "🔴 \(msg)"
+                UsageManager.shared.save()
+                return (false, msg)
+            } else {
+                return (false, "Código HTTP \(httpResponse.statusCode)")
+            }
+        } catch {
+            let msg = "Error de conexión: \(error.localizedDescription)"
+            UsageManager.shared.providers[index].lastSyncStatus = "🔴 \(msg)"
+            UsageManager.shared.save()
+            return (false, msg)
+        }
+    }
+    
+    // MARK: - GitHub Copilot API
+    private func syncCopilot(index: Int, token: String) async -> (Bool, String) {
+        guard let url = URL(string: "https://api.github.com/user") else {
+            return (false, "URL inválida")
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("CoderBar-App", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 10
+        
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return (false, "Sin respuesta de GitHub")
+            }
+            
+            if httpResponse.statusCode == 200 {
+                UsageManager.shared.providers[index].lastSyncStatus = "🟢 Conectado"
+                UsageManager.shared.save()
+                return (true, "GitHub Copilot verificado con éxito.")
+            } else if httpResponse.statusCode == 401 {
+                let msg = "Token de GitHub inválido (401)"
+                UsageManager.shared.providers[index].lastSyncStatus = "🔴 \(msg)"
+                UsageManager.shared.save()
+                return (false, msg)
+            } else {
+                return (false, "Código HTTP \(httpResponse.statusCode)")
+            }
+        } catch {
+            let msg = "Error de red: \(error.localizedDescription)"
+            UsageManager.shared.providers[index].lastSyncStatus = "🔴 \(msg)"
+            UsageManager.shared.save()
+            return (false, msg)
         }
     }
     

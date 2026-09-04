@@ -30,7 +30,7 @@ public final class UsageManager: ObservableObject {
     @Published public var selectedProviderId: AIProviderType? = nil
     
     // Position & Alignment settings
-    @Published public var position: NotchPosition = .rightEdge {
+    @Published public var position: NotchPosition = .leftEdge {
         didSet {
             UserDefaults.standard.set(position.rawValue, forKey: "usage_notch_position")
             notifyLayoutChange()
@@ -51,14 +51,14 @@ public final class UsageManager: ObservableObject {
         }
     }
     
-    @Published public var primaryProviderId: AIProviderType = .claude {
+    @Published public var primaryProviderId: AIProviderType = .antigravity {
         didSet {
             UserDefaults.standard.set(primaryProviderId.rawValue, forKey: "usage_notch_primary_provider")
         }
     }
     
     // Expansion & Visibility
-    @Published public var isExpanded: Bool = false {
+    @Published public var isExpanded: Bool = true {
         didSet {
             notifyExpandStateChanged()
         }
@@ -72,7 +72,7 @@ public final class UsageManager: ObservableObject {
     }
     
     private var timerCancellable: AnyCancellable?
-    private let storageKey = "usage_notch_providers_data"
+    private let storageKey = "usage_notch_providers_data_v2"
     
     public init() {
         loadSettings()
@@ -110,10 +110,48 @@ public final class UsageManager: ObservableObject {
         } else {
             self.providers = [
                 ProviderUsage(
-                    id: .claude,
+                    id: .antigravity,
                     isEnabled: true,
                     primaryLabel: "Current session",
-                    primaryUsedPercent: 73.0,
+                    primaryUsedPercent: 0.0, // 100% Remaining
+                    primaryResetIntervalMinutes: 299, // 4h 59m
+                    secondaryLabel: "Weekly",
+                    secondaryUsedPercent: 1.0, // 99% Remaining
+                    currentCount: 100,
+                    maxCount: 100,
+                    unitName: "%"
+                ),
+                ProviderUsage(
+                    id: .codex,
+                    isEnabled: true,
+                    primaryLabel: "Current session",
+                    primaryUsedPercent: 0.0, // 100% Remaining
+                    primaryResetIntervalMinutes: 286, // 4h 46m
+                    secondaryLabel: "Weekly",
+                    secondaryUsedPercent: 46.0, // 54% Remaining
+                    currentCount: 100,
+                    maxCount: 100,
+                    unitName: "%",
+                    tokensToday: "20.3m · $10.92",
+                    tokensMonth: "1.25b · $213.58"
+                ),
+                ProviderUsage(
+                    id: .copilot,
+                    isEnabled: true,
+                    primaryLabel: "Current session",
+                    primaryUsedPercent: 3.0, // 97% Remaining
+                    primaryResetIntervalMinutes: 300,
+                    secondaryLabel: "Weekly",
+                    secondaryUsedPercent: 10.0,
+                    currentCount: 97,
+                    maxCount: 100,
+                    unitName: "%"
+                ),
+                ProviderUsage(
+                    id: .claude,
+                    isEnabled: false,
+                    primaryLabel: "Current session",
+                    primaryUsedPercent: 27.0,
                     primaryResetIntervalMinutes: 51,
                     secondaryLabel: "All models",
                     secondaryUsedPercent: 7.0,
@@ -123,9 +161,9 @@ public final class UsageManager: ObservableObject {
                 ),
                 ProviderUsage(
                     id: .cursor,
-                    isEnabled: true,
+                    isEnabled: false,
                     primaryLabel: "Fast requests",
-                    primaryUsedPercent: 21.0,
+                    primaryUsedPercent: 79.0,
                     primaryResetIntervalMinutes: 1440 * 12,
                     secondaryLabel: "Slow requests",
                     secondaryUsedPercent: 12.0,
@@ -134,22 +172,10 @@ public final class UsageManager: ObservableObject {
                     unitName: "reqs"
                 ),
                 ProviderUsage(
-                    id: .antigravity,
-                    isEnabled: true,
-                    primaryLabel: "Agent runs",
-                    primaryUsedPercent: 52.0,
-                    primaryResetIntervalMinutes: 360,
-                    secondaryLabel: "Daily quota",
-                    secondaryUsedPercent: 45.0,
-                    currentCount: 52,
-                    maxCount: 100,
-                    unitName: "tasks"
-                ),
-                ProviderUsage(
                     id: .claudeCode,
-                    isEnabled: true,
+                    isEnabled: false,
                     primaryLabel: "CLI session",
-                    primaryUsedPercent: 35.0,
+                    primaryUsedPercent: 65.0,
                     primaryResetIntervalMinutes: 180,
                     secondaryLabel: "Token budget",
                     secondaryUsedPercent: 28.0,
@@ -159,9 +185,9 @@ public final class UsageManager: ObservableObject {
                 ),
                 ProviderUsage(
                     id: .kiro,
-                    isEnabled: true,
+                    isEnabled: false,
                     primaryLabel: "Daily requests",
-                    primaryUsedPercent: 18.0,
+                    primaryUsedPercent: 82.0,
                     primaryResetIntervalMinutes: 720,
                     secondaryLabel: "Weekly quota",
                     secondaryUsedPercent: 14.0,

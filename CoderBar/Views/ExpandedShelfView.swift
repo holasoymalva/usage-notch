@@ -7,74 +7,123 @@ import SwiftUI
 
 public struct ExpandedShelfView: View {
     @ObservedObject var usageManager = UsageManager.shared
+    @State private var dismissTask: Task<Void, Never>? = nil
     
     private var activeProviders: [ProviderUsage] {
-        usageManager.providers.filter { $0.isEnabled }
+        let list = usageManager.providers.filter { $0.isEnabled }
+        return list.isEmpty ? usageManager.providers.prefix(3).map { $0 } : list
     }
     
     private var currentPopoverUsage: ProviderUsage? {
         if let id = usageManager.selectedProviderId {
-            return usageManager.providers.first(where: { $0.id == id })
+            return activeProviders.first(where: { $0.id == id }) ?? activeProviders.first
         }
         return nil
+    }
+    
+    private var activeIndex: Int {
+        guard let id = usageManager.selectedProviderId,
+              let idx = activeProviders.firstIndex(where: { $0.id == id }) else {
+            return 0
+        }
+        return idx
+    }
+    
+    private var dockHeight: CGFloat {
+        let count = CGFloat(activeProviders.count)
+        return 48.0 + (count * 64.0) + (max(0, count - 1) * 16.0) + 48.0
     }
     
     public var body: some View {
         Group {
             switch usageManager.position {
-            case .rightEdge:
-                rightEdgeLayout
             case .leftEdge:
                 leftEdgeLayout
+            case .rightEdge:
+                rightEdgeLayout
             case .topNotch:
                 topNotchLayout
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onHover { isHovered in
+            if !isHovered {
+                dismissTask?.cancel()
+                dismissTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        usageManager.selectedProviderId = nil
+                    }
+                }
+            } else {
+                dismissTask?.cancel()
+            }
+        }
     }
     
-    // MARK: - Right Edge Layout
-    private var rightEdgeLayout: some View {
-        ZStack(alignment: .topTrailing) {
+    // MARK: - Translucent Dark Glass Dock Background
+    private func dockGlassBackground(position: NotchPosition) -> some View {
+        ZStack {
+            // 1. Native macOS frosted glass blur
+            NotchBezelShape(position: position, flareHeight: 38, flareWidth: 30, cornerRadius: 24)
+                .fill(.ultraThinMaterial)
+                .environment(\.colorScheme, .dark)
+            
+            // 2. Translucent deep black glass gradient (NO green/teal)
+            NotchBezelShape(position: position, flareHeight: 38, flareWidth: 30, cornerRadius: 24)
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color(white: 0.15).opacity(0.82), location: 0.0),
+                            .init(color: Color(white: 0.07).opacity(0.88), location: 0.5),
+                            .init(color: Color(white: 0.02).opacity(0.94), location: 1.0)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // 3. Subtle top specular reflection sheen
+            NotchBezelShape(position: position, flareHeight: 38, flareWidth: 30, cornerRadius: 24)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.10), Color.clear],
+                        startPoint: .top,
+                        endPoint: .center
+                    )
+                )
+        }
+        .overlay(
+            // 4. Highlight stroke only along the curve exposed to the desktop (not against the physical screen edge!)
+            NotchBezelShape(position: position, flareHeight: 38, flareWidth: 30, cornerRadius: 24, isOutlineOnly: true)
+                .stroke(
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color.white.opacity(0.42), location: 0.0),
+                            .init(color: Color.white.opacity(0.24), location: 0.20),
+                            .init(color: Color.white.opacity(0.12), location: 0.60),
+                            .init(color: Color.white.opacity(0.22), location: 1.0)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 1.2
+                )
+        )
+        .shadow(color: Color.black.opacity(0.52), radius: 18, x: position == .leftEdge ? 3 : -3, y: 0)
+    }
+    
+    // MARK: - Left Edge Layout (Mockup Primary)
+    private var leftEdgeLayout: some View {
+        ZStack(alignment: .topLeading) {
             Color.clear
             
-            // Popover Card
-            if let usage = currentPopoverUsage {
-                UsagePopoverView(
-                    usageManager: usageManager,
-                    usage: usage,
-                    onClose: {
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                            usageManager.selectedProviderId = nil
-                        }
-                    }
-                )
-                .padding(.trailing, 72)
-                .padding(.top, 10)
-            }
-            
-            // Vertical Shelf Flap
-            ZStack(alignment: .trailing) {
-                NotchBezelShape(position: .rightEdge, filletRadius: 20, cornerRadius: 24)
-                    .fill(Color.black)
-                    .frame(width: 64)
-                    .shadow(color: Color.black.opacity(0.55), radius: 12, x: -3, y: 0)
+            // 1. Sleek Dock Flap on Left Screen Edge
+            ZStack(alignment: .leading) {
+                dockGlassBackground(position: .leftEdge)
+                    .frame(width: 74, height: dockHeight)
                 
-                VStack(spacing: 14) {
-                    // Close button
-                    Button(action: {
-                        NotchOverlayController.shared.collapse()
-                    }) {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color.white.opacity(0.4))
-                            .padding(.top, 12)
-                            .frame(width: 30, height: 20)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Cerrar")
-                    
-                    // AI Providers
+                VStack(spacing: 16) {
                     ForEach(activeProviders) { item in
                         UsageGaugeView(
                             usage: item,
@@ -87,124 +136,129 @@ public struct ExpandedShelfView: View {
                                         usageManager.selectedProviderId = item.id
                                     }
                                 }
-                            }
-                        )
-                    }
-                    
-                    Divider()
-                        .background(Color.white.opacity(0.12))
-                        .frame(width: 28)
-                    
-                    // Settings gear
-                    Button(action: {
-                        SettingsWindowController.shared.showSettings()
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.5))
-                            .frame(width: 34, height: 28)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Preferencias")
-                    .padding(.bottom, 14)
-                }
-                .frame(width: 64)
-            }
-            .frame(width: 64)
-        }
-        .frame(width: 360, height: 440, alignment: .topTrailing)
-    }
-    
-    // MARK: - Left Edge Layout
-    private var leftEdgeLayout: some View {
-        ZStack(alignment: .topLeading) {
-            Color.clear
-            
-            ZStack(alignment: .leading) {
-                NotchBezelShape(position: .leftEdge, filletRadius: 20, cornerRadius: 24)
-                    .fill(Color.black)
-                    .frame(width: 64)
-                    .shadow(color: Color.black.opacity(0.55), radius: 12, x: 3, y: 0)
-                
-                VStack(spacing: 14) {
-                    Button(action: {
-                        NotchOverlayController.shared.collapse()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color.white.opacity(0.4))
-                            .padding(.top, 12)
-                            .frame(width: 30, height: 20)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    ForEach(activeProviders) { item in
-                        UsageGaugeView(
-                            usage: item,
-                            isSelected: usageManager.selectedProviderId == item.id,
-                            onTap: {
-                                withAnimation {
-                                    if usageManager.selectedProviderId == item.id {
-                                        usageManager.selectedProviderId = nil
-                                    } else {
+                            },
+                            onHoverChanged: { isHovered in
+                                if isHovered {
+                                    dismissTask?.cancel()
+                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                         usageManager.selectedProviderId = item.id
                                     }
                                 }
                             }
                         )
                     }
-                    
-                    Divider().background(Color.white.opacity(0.12)).frame(width: 28)
-                    
-                    Button(action: {
-                        SettingsWindowController.shared.showSettings()
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 13))
-                            .foregroundColor(Color.white.opacity(0.5))
-                            .frame(width: 34, height: 28)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.bottom, 14)
                 }
-                .frame(width: 64)
+                .padding(.vertical, 48)
+                .frame(width: 74)
             }
-            .frame(width: 64)
+            .frame(width: 74, height: dockHeight, alignment: .leading)
+            .contextMenu {
+                contextMenuItems
+            }
             
+            // 2. Contextual Popover Card with Arrow
             if let usage = currentPopoverUsage {
+                let gaugeCenterY = 48.0 + CGFloat(activeIndex) * (64.0 + 16.0) + 22.0
+                let cardTop = max(8.0, min(dockHeight - 160.0, gaugeCenterY - 45.0))
+                let arrowY = max(22.0, gaugeCenterY - cardTop)
+                
                 UsagePopoverView(
                     usageManager: usageManager,
                     usage: usage,
+                    arrowY: arrowY,
                     onClose: {
-                        withAnimation { usageManager.selectedProviderId = nil }
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            usageManager.selectedProviderId = nil
+                        }
                     }
                 )
-                .padding(.leading, 72)
-                .padding(.top, 10)
+                .offset(x: 70, y: cardTop)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .leading)),
+                    removal: .opacity
+                ))
             }
         }
-        .frame(width: 360, height: 440, alignment: .topLeading)
+        .frame(width: 420, height: max(dockHeight + 40, 380), alignment: .topLeading)
+    }
+    
+    // MARK: - Right Edge Layout
+    private var rightEdgeLayout: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.clear
+            
+            // Popover Card
+            if let usage = currentPopoverUsage {
+                let gaugeCenterY = 48.0 + CGFloat(activeIndex) * (64.0 + 16.0) + 22.0
+                let cardTop = max(8.0, min(dockHeight - 160.0, gaugeCenterY - 45.0))
+                let arrowY = max(22.0, gaugeCenterY - cardTop)
+                
+                UsagePopoverView(
+                    usageManager: usageManager,
+                    usage: usage,
+                    arrowY: arrowY,
+                    onClose: {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            usageManager.selectedProviderId = nil
+                        }
+                    }
+                )
+                .offset(x: -70, y: cardTop)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .trailing)),
+                    removal: .opacity
+                ))
+            }
+            
+            // Dock Flap on Right Screen Edge
+            ZStack(alignment: .trailing) {
+                dockGlassBackground(position: .rightEdge)
+                    .frame(width: 74, height: dockHeight)
+                
+                VStack(spacing: 16) {
+                    ForEach(activeProviders) { item in
+                        UsageGaugeView(
+                            usage: item,
+                            isSelected: usageManager.selectedProviderId == item.id,
+                            onTap: {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                    if usageManager.selectedProviderId == item.id {
+                                        usageManager.selectedProviderId = nil
+                                    } else {
+                                        usageManager.selectedProviderId = item.id
+                                    }
+                                }
+                            },
+                            onHoverChanged: { isHovered in
+                                if isHovered {
+                                    dismissTask?.cancel()
+                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                        usageManager.selectedProviderId = item.id
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+                .padding(.vertical, 48)
+                .frame(width: 74)
+            }
+            .frame(width: 74, height: dockHeight, alignment: .trailing)
+            .contextMenu {
+                contextMenuItems
+            }
+        }
+        .frame(width: 420, height: max(dockHeight + 40, 380), alignment: .topTrailing)
     }
     
     // MARK: - Top Notch Layout
     private var topNotchLayout: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 8) {
             ZStack(alignment: .top) {
-                NotchBezelShape(position: .topNotch, filletRadius: 16, cornerRadius: 20)
-                    .fill(Color.black)
-                    .frame(height: 60)
-                    .shadow(color: Color.black.opacity(0.5), radius: 8, x: 0, y: 3)
+                dockGlassBackground(position: .topNotch)
+                    .frame(height: 56)
                 
-                HStack(spacing: 16) {
-                    Button(action: {
-                        NotchOverlayController.shared.collapse()
-                    }) {
-                        Image(systemName: "chevron.up")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color.white.opacity(0.4))
-                    }
-                    .buttonStyle(.plain)
-                    
+                HStack(spacing: 18) {
                     ForEach(activeProviders) { item in
                         UsageGaugeView(
                             usage: item,
@@ -217,39 +271,62 @@ public struct ExpandedShelfView: View {
                                         usageManager.selectedProviderId = item.id
                                     }
                                 }
+                            },
+                            onHoverChanged: { isHovered in
+                                if isHovered {
+                                    withAnimation {
+                                        usageManager.selectedProviderId = item.id
+                                    }
+                                }
                             }
                         )
                     }
-                    
-                    Divider().background(Color.white.opacity(0.12)).frame(height: 24)
-                    
-                    Button(action: {
-                        SettingsWindowController.shared.showSettings()
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 13))
-                            .foregroundColor(Color.white.opacity(0.5))
-                    }
-                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 18)
-                .padding(.top, 6)
+                .padding(.top, 4)
             }
-            .frame(height: 60)
+            .frame(height: 56)
+            .contextMenu {
+                contextMenuItems
+            }
             
             if let usage = currentPopoverUsage {
                 UsagePopoverView(
                     usageManager: usageManager,
                     usage: usage,
+                    arrowY: 20,
                     onClose: {
                         withAnimation { usageManager.selectedProviderId = nil }
                     }
                 )
-                .padding(.top, 8)
             }
             
             Spacer(minLength: 0)
         }
-        .frame(width: 460, height: 320, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+    
+    // MARK: - Context Menu
+    @ViewBuilder
+    private var contextMenuItems: some View {
+        Button("Sincronizar APIs Ahora") {
+            Task {
+                await APIUsageService.shared.syncAllServices()
+            }
+        }
+        
+        Button("Preferencias...") {
+            SettingsWindowController.shared.showSettings()
+        }
+        
+        Divider()
+        
+        Button("Ocultar CoderBar") {
+            usageManager.isHudVisible = false
+        }
+        
+        Button("Salir") {
+            NSApplication.shared.terminate(nil)
+        }
     }
 }

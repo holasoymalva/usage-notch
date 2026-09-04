@@ -6,9 +6,11 @@
 import SwiftUI
 
 public enum AIProviderType: String, CaseIterable, Codable, Identifiable {
+    case antigravity = "Antigravity"
+    case codex = "Codex"
+    case copilot = "Copilot"
     case claude = "Claude"
     case cursor = "Cursor"
-    case antigravity = "Antigravity"
     case claudeCode = "Claude Code"
     case kiro = "Kiro"
     
@@ -16,9 +18,11 @@ public enum AIProviderType: String, CaseIterable, Codable, Identifiable {
     
     public var displayName: String {
         switch self {
+        case .antigravity: return "Antigravity"
+        case .codex: return "Codex"
+        case .copilot: return "Copilot"
         case .claude: return "Claude"
         case .cursor: return "Cursor"
-        case .antigravity: return "Antigravity"
         case .claudeCode: return "Claude Code"
         case .kiro: return "Kiro"
         }
@@ -26,9 +30,11 @@ public enum AIProviderType: String, CaseIterable, Codable, Identifiable {
     
     public var subtitle: String {
         switch self {
+        case .antigravity: return "Google Antigravity & Agent Studio"
+        case .codex: return "OpenAI Codex & Developer Platform"
+        case .copilot: return "GitHub Copilot Workspace & Agent"
         case .claude: return "Anthropic API & Pro Quota"
         case .cursor: return "Fast & Slow Requests (Cursor API)"
-        case .antigravity: return "Autonomous Coding & OpenRouter"
         case .claudeCode: return "Terminal Agent Token Budget"
         case .kiro: return "Dev Assistant & Custom API"
         }
@@ -36,11 +42,16 @@ public enum AIProviderType: String, CaseIterable, Codable, Identifiable {
     
     public var defaultAccentColor: Color {
         switch self {
-        case .claude: return Color(red: 0.94, green: 0.45, blue: 0.28) // Warm Anthropic terracotta / orange
-        case .cursor: return Color(red: 0.16, green: 0.65, blue: 0.98) // Bright Cursor blue
-        case .antigravity: return Color(red: 0.95, green: 0.80, blue: 0.20) // Deepmind gold/yellow
-        case .claudeCode: return Color(red: 0.20, green: 0.85, blue: 0.65) // Terminal cyan/mint
-        case .kiro: return Color(red: 0.75, green: 0.45, blue: 0.95) // Purple accent
+        case .antigravity, .codex, .copilot:
+            return Color(red: 0.05, green: 0.90, blue: 0.48) // Electric emerald green
+        case .claude:
+            return Color(red: 0.94, green: 0.45, blue: 0.28) // Warm Anthropic terracotta / orange
+        case .cursor:
+            return Color(red: 0.16, green: 0.65, blue: 0.98) // Bright Cursor blue
+        case .claudeCode:
+            return Color(red: 0.20, green: 0.85, blue: 0.65) // Terminal cyan/mint
+        case .kiro:
+            return Color(red: 0.75, green: 0.45, blue: 0.95) // Purple accent
         }
     }
 }
@@ -78,6 +89,21 @@ public struct ProviderUsage: Codable, Identifiable {
     public var maxCount: Double
     public var unitName: String
     
+    // Optional token stats (e.g. for Codex)
+    public var tokensToday: String?
+    public var tokensMonth: String?
+    
+    // Remaining percentages (mockup shows % Remaining)
+    public var primaryRemainingPercent: Double {
+        get { max(0.0, min(100.0, 100.0 - primaryUsedPercent)) }
+        set { primaryUsedPercent = max(0.0, min(100.0, 100.0 - newValue)) }
+    }
+    
+    public var secondaryRemainingPercent: Double {
+        get { max(0.0, min(100.0, 100.0 - secondaryUsedPercent)) }
+        set { secondaryUsedPercent = max(0.0, min(100.0, 100.0 - newValue)) }
+    }
+    
     public init(
         id: AIProviderType,
         isEnabled: Bool = true,
@@ -86,13 +112,15 @@ public struct ProviderUsage: Codable, Identifiable {
         customEndpoint: String = "",
         lastSyncStatus: String = "No configurado",
         primaryLabel: String = "Current session",
-        primaryUsedPercent: Double = 50.0,
+        primaryUsedPercent: Double = 0.0, // Default 0% used = 100% remaining
         primaryResetIntervalMinutes: Int = 300,
-        secondaryLabel: String = "All models",
-        secondaryUsedPercent: Double = 15.0,
-        currentCount: Double = 73,
+        secondaryLabel: String = "Weekly",
+        secondaryUsedPercent: Double = 1.0, // Default 1% used = 99% remaining
+        currentCount: Double = 100,
         maxCount: Double = 100,
-        unitName: String = "%"
+        unitName: String = "%",
+        tokensToday: String? = nil,
+        tokensMonth: String? = nil
     ) {
         self.id = id
         self.isEnabled = isEnabled
@@ -108,34 +136,48 @@ public struct ProviderUsage: Codable, Identifiable {
         self.secondaryUsedPercent = secondaryUsedPercent
         self.secondaryResetDate = Calendar.current.nextDate(
             after: Date(),
-            matching: DateComponents(hour: 0, minute: 0),
+            matching: DateComponents(hour: 23, minute: 52),
             matchingPolicy: .nextTime
         ) ?? Date().addingTimeInterval(86400 * 4)
         self.currentCount = currentCount
         self.maxCount = maxCount
         self.unitName = unitName
+        self.tokensToday = tokensToday
+        self.tokensMonth = tokensMonth
     }
     
-    public var primaryTimeRemainingString: String {
+    public var headerResetString: String {
         let remaining = primaryResetDate.timeIntervalSince(Date())
         if remaining <= 0 {
-            return "Reset pending"
+            return "Resets soon"
         }
-        let minutes = Int(remaining / 60)
-        if minutes < 60 {
-            return "Resets in \(max(1, minutes)) min"
+        let totalMinutes = Int(remaining / 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0 {
+            return "Resets in \(hours)h \(minutes)m"
+        } else {
+            return "Resets in \(minutes)m"
         }
-        let hours = minutes / 60
-        let remainingMins = minutes % 60
-        if remainingMins == 0 {
-            return "Resets in \(hours)h"
-        }
-        return "Resets in \(hours)h \(remainingMins)m"
     }
     
-    public var secondaryResetString: String {
+    public var primaryResetTimeString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return "Resets today \(formatter.string(from: primaryResetDate))"
+    }
+    
+    public var secondaryResetTimeString: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE h:mm a"
         return "Resets \(formatter.string(from: secondaryResetDate))"
+    }
+    
+    public var primaryTimeRemainingString: String {
+        return headerResetString
+    }
+    
+    public var secondaryResetString: String {
+        return secondaryResetTimeString
     }
 }
