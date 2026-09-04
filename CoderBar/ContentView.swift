@@ -1,24 +1,14 @@
 //
 //  ContentView.swift
-//  CoderBar
-//
-//  Created by Malva on 04/09/26.
+//  Usage Notch
 //
 
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        NotchBarView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.clear)
     }
-}
-
-#Preview {
-    ContentView()
 }
