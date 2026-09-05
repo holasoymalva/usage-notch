@@ -4,8 +4,6 @@
 
 Built with 100% native Swift & SwiftUI for MacBook power users and developers. Compatible with macOS Sonoma, Sequoia, and macOS 15+.
 
-![Usage Notch Banner](CoderBar/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png)
-
 ---
 
 ## ✨ Features
