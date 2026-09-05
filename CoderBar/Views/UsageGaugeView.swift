@@ -13,18 +13,25 @@ public struct UsageGaugeView: View {
     
     @State private var isHovering: Bool = false
     
+    private var isConfiguredOrLive: Bool {
+        usage.hasLiveMetrics || !usage.apiKeyOrToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    
     private var displayPercent: Double {
         usage.primaryRemainingPercent
     }
     
     private var ringColor: Color {
+        if !isConfiguredOrLive {
+            return Color.white.opacity(0.18)
+        }
         let pct = displayPercent
         if pct <= 15 {
             return Color(red: 0.98, green: 0.32, blue: 0.28) // Urgent red when almost depleted
         } else if pct <= 35 {
             return Color(red: 0.96, green: 0.65, blue: 0.22) // Warning amber
         } else {
-            return Color(red: 0.05, green: 0.90, blue: 0.48) // Electric emerald green (exact match to mockup)
+            return Color(red: 0.05, green: 0.90, blue: 0.48) // Electric emerald green
         }
     }
     
@@ -39,7 +46,7 @@ public struct UsageGaugeView: View {
                     
                     // Active progress ring (Remaining quota)
                     Circle()
-                        .trim(from: 0.0, to: CGFloat(min(1.0, max(0.0, displayPercent / 100.0))))
+                        .trim(from: 0.0, to: CGFloat(isConfiguredOrLive ? min(1.0, max(0.0, displayPercent / 100.0)) : 0.0))
                         .stroke(
                             ringColor,
                             style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
@@ -70,15 +77,15 @@ public struct UsageGaugeView: View {
                     ProviderBrandIcon(
                         provider: usage.id,
                         size: 19,
-                        color: .white
+                        color: isConfiguredOrLive ? .white : Color.white.opacity(0.55)
                     )
                 }
                 .shadow(color: ringColor.opacity(isSelected || isHovering ? 0.4 : 0.1), radius: 5, x: 0, y: 0)
                 
                 // Bold percentage label below ring
-                Text("\(Int(displayPercent))%")
+                Text(isConfiguredOrLive ? "\(Int(displayPercent))%" : "--")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(isSelected || isHovering ? .white : Color.white.opacity(0.92))
+                    .foregroundColor(isSelected || isHovering ? .white : (isConfiguredOrLive ? Color.white.opacity(0.92) : Color.white.opacity(0.40)))
             }
             .scaleEffect(isHovering || isSelected ? 1.05 : 1.0)
             .animation(.easeInOut(duration: 0.16), value: isHovering)

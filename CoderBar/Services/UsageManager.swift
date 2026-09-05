@@ -6,7 +6,7 @@
 import SwiftUI
 import Combine
 
-public enum NotchPosition: String, CaseIterable, Codable, Identifiable {
+public enum NotchPosition: String, CaseIterable, Codable, Identifiable, Sendable {
     case rightEdge = "Borde Derecho"
     case leftEdge = "Borde Izquierdo"
     case topNotch = "Notch Superior (MacBook)"
@@ -14,7 +14,7 @@ public enum NotchPosition: String, CaseIterable, Codable, Identifiable {
     public var id: String { rawValue }
 }
 
-public enum EdgeAlignment: String, CaseIterable, Codable, Identifiable {
+public enum EdgeAlignment: String, CaseIterable, Codable, Identifiable, Sendable {
     case top = "Arriba"
     case center = "Centro"
     case bottom = "Abajo"
@@ -126,20 +126,33 @@ public final class UsageManager: ObservableObject {
         // Ensure every case in AIProviderType exists in self.providers
         var finalList: [ProviderUsage] = []
         for providerType in AIProviderType.allCases {
-            if let existing = loadedList.first(where: { $0.id == providerType }) {
+            if var existing = loadedList.first(where: { $0.id == providerType }) {
+                // Sanitize any previous hardcoded mock values if provider has no live metrics
+                if !existing.hasLiveMetrics {
+                    if existing.tokensToday == "20.3m · $10.92" {
+                        existing.tokensToday = nil
+                    }
+                    if existing.tokensMonth == "1.25b · $213.58" {
+                        existing.tokensMonth = nil
+                    }
+                    if existing.secondaryUsedPercent == 46.0 && existing.apiKeyOrToken.isEmpty {
+                        existing.secondaryUsedPercent = 0.0
+                    }
+                }
                 finalList.append(existing)
             } else {
-                let isDefaultEnabled = (providerType == .antigravity || providerType == .codex)
+                let isDefaultEnabled = (providerType == .antigravity || providerType == .cursor)
                 let newUsage = ProviderUsage(
                     id: providerType,
                     isEnabled: isDefaultEnabled,
-                    primaryLabel: "Current session",
+                    primaryLabel: providerType == .cursor ? "Fast Requests" : "Current session",
                     primaryUsedPercent: 0.0,
-                    primaryResetIntervalMinutes: providerType == .antigravity ? 299 : 286,
+                    primaryResetIntervalMinutes: 300,
                     secondaryLabel: "Weekly",
-                    secondaryUsedPercent: providerType == .codex ? 46.0 : 1.0,
-                    tokensToday: providerType == .codex ? "20.3m · $10.92" : nil,
-                    tokensMonth: providerType == .codex ? "1.25b · $213.58" : nil
+                    secondaryUsedPercent: 0.0,
+                    currentCount: 0,
+                    maxCount: providerType == .cursor ? 500 : 100,
+                    unitName: providerType == .cursor ? "reqs" : "%"
                 )
                 finalList.append(newUsage)
             }
@@ -156,6 +169,12 @@ public final class UsageManager: ObservableObject {
         
         self.providers = finalList
         save()
+    }
+    
+    public func detectLocalServices() async {
+        for provider in providers where provider.id.authMethod == .local || provider.id == .ollama || provider.id == .antigravity {
+            _ = await APIUsageService.shared.testAndSync(providerId: provider.id)
+        }
     }
     
     public func save() {

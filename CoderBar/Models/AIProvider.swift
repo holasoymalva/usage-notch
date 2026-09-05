@@ -201,6 +201,8 @@ public struct ProviderUsage: Codable, Identifiable {
     public var apiKeyOrToken: String
     public var customEndpoint: String
     public var lastSyncStatus: String
+    public var hasLiveMetrics: Bool
+    public var lastSyncDate: Date?
     
     // Primary metric (e.g. Current session or Fast requests)
     public var primaryLabel: String
@@ -218,11 +220,11 @@ public struct ProviderUsage: Codable, Identifiable {
     public var maxCount: Double
     public var unitName: String
     
-    // Optional token stats (e.g. for Codex)
+    // Optional token stats (e.g. for Codex / OpenAI)
     public var tokensToday: String?
     public var tokensMonth: String?
     
-    // Remaining percentages (mockup shows % Remaining)
+    // Remaining percentages
     public var primaryRemainingPercent: Double {
         get { max(0.0, min(100.0, 100.0 - primaryUsedPercent)) }
         set { primaryUsedPercent = max(0.0, min(100.0, 100.0 - newValue)) }
@@ -240,12 +242,14 @@ public struct ProviderUsage: Codable, Identifiable {
         apiKeyOrToken: String = "",
         customEndpoint: String = "",
         lastSyncStatus: String = "No configurado",
+        hasLiveMetrics: Bool = false,
+        lastSyncDate: Date? = nil,
         primaryLabel: String = "Current session",
-        primaryUsedPercent: Double = 0.0, // Default 0% used = 100% remaining
+        primaryUsedPercent: Double = 0.0,
         primaryResetIntervalMinutes: Int = 300,
         secondaryLabel: String = "Weekly",
-        secondaryUsedPercent: Double = 1.0, // Default 1% used = 99% remaining
-        currentCount: Double = 100,
+        secondaryUsedPercent: Double = 0.0,
+        currentCount: Double = 0,
         maxCount: Double = 100,
         unitName: String = "%",
         tokensToday: String? = nil,
@@ -257,17 +261,15 @@ public struct ProviderUsage: Codable, Identifiable {
         self.apiKeyOrToken = apiKeyOrToken
         self.customEndpoint = customEndpoint
         self.lastSyncStatus = lastSyncStatus
+        self.hasLiveMetrics = hasLiveMetrics
+        self.lastSyncDate = lastSyncDate
         self.primaryLabel = primaryLabel
         self.primaryUsedPercent = primaryUsedPercent
         self.primaryResetIntervalMinutes = primaryResetIntervalMinutes
         self.primaryResetDate = Date().addingTimeInterval(TimeInterval(primaryResetIntervalMinutes * 60))
         self.secondaryLabel = secondaryLabel
         self.secondaryUsedPercent = secondaryUsedPercent
-        self.secondaryResetDate = Calendar.current.nextDate(
-            after: Date(),
-            matching: DateComponents(hour: 23, minute: 52),
-            matchingPolicy: .nextTime
-        ) ?? Date().addingTimeInterval(86400 * 4)
+        self.secondaryResetDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date().addingTimeInterval(86400 * 7)
         self.currentCount = currentCount
         self.maxCount = maxCount
         self.unitName = unitName
@@ -276,6 +278,9 @@ public struct ProviderUsage: Codable, Identifiable {
     }
     
     public var headerResetString: String {
+        if !hasLiveMetrics && apiKeyOrToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "No configurado"
+        }
         let remaining = primaryResetDate.timeIntervalSince(Date())
         if remaining <= 0 {
             return "Resets soon"
@@ -291,12 +296,18 @@ public struct ProviderUsage: Codable, Identifiable {
     }
     
     public var primaryResetTimeString: String {
+        if !hasLiveMetrics && apiKeyOrToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Requiere credenciales"
+        }
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return "Resets today \(formatter.string(from: primaryResetDate))"
     }
     
     public var secondaryResetTimeString: String {
+        if !hasLiveMetrics && apiKeyOrToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Pendiente de sincronización"
+        }
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE h:mm a"
         return "Resets \(formatter.string(from: secondaryResetDate))"

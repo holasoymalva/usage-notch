@@ -53,6 +53,7 @@ public struct CollapsedBubbleView: View {
             .shadow(color: Color.black.opacity(0.4), radius: 6, x: -2, y: 0)
             
             let primary = usageManager.primaryUsage
+            let isConfigured = primary.hasLiveMetrics || !primary.apiKeyOrToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             let rem = primary.primaryRemainingPercent
             ZStack {
                 Circle()
@@ -60,9 +61,9 @@ public struct CollapsedBubbleView: View {
                     .frame(width: 32, height: 32)
                 
                 Circle()
-                    .trim(from: 0.0, to: CGFloat(min(1.0, max(0.0, rem / 100.0))))
+                    .trim(from: 0.0, to: CGFloat(isConfigured ? min(1.0, max(0.0, rem / 100.0)) : 0.0))
                     .stroke(
-                        ringColor(for: rem),
+                        isConfigured ? ringColor(for: rem) : Color.white.opacity(0.18),
                         style: StrokeStyle(lineWidth: 3.0, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
@@ -72,7 +73,7 @@ public struct CollapsedBubbleView: View {
                     .fill(Color(white: 0.08).opacity(0.95))
                     .frame(width: 24, height: 24)
                 
-                ProviderBrandIcon(provider: primary.id, size: 13, color: .white)
+                ProviderBrandIcon(provider: primary.id, size: 13, color: isConfigured ? .white : Color.white.opacity(0.55))
             }
             .padding(.trailing, 7)
         }
@@ -105,20 +106,21 @@ public struct CollapsedBubbleView: View {
             .shadow(color: Color.black.opacity(0.4), radius: 6, x: 2, y: 0)
             
             let primary = usageManager.primaryUsage
+            let isConfigured = primary.hasLiveMetrics || !primary.apiKeyOrToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             let rem = primary.primaryRemainingPercent
             ZStack {
                 Circle()
                     .stroke(Color.white.opacity(0.10), lineWidth: 3.0)
                     .frame(width: 32, height: 32)
                 Circle()
-                    .trim(from: 0.0, to: CGFloat(min(1.0, max(0.0, rem / 100.0))))
-                    .stroke(ringColor(for: rem), style: StrokeStyle(lineWidth: 3.0, lineCap: .round))
+                    .trim(from: 0.0, to: CGFloat(isConfigured ? min(1.0, max(0.0, rem / 100.0)) : 0.0))
+                    .stroke(isConfigured ? ringColor(for: rem) : Color.white.opacity(0.18), style: StrokeStyle(lineWidth: 3.0, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .frame(width: 32, height: 32)
                 Circle()
                     .fill(Color(white: 0.08).opacity(0.95))
                     .frame(width: 24, height: 24)
-                ProviderBrandIcon(provider: primary.id, size: 13, color: .white)
+                ProviderBrandIcon(provider: primary.id, size: 13, color: isConfigured ? .white : Color.white.opacity(0.55))
             }
             .padding(.leading, 7)
         }
@@ -151,20 +153,21 @@ public struct CollapsedBubbleView: View {
             .shadow(color: Color.black.opacity(0.4), radius: 6, x: 0, y: 2)
             
             let primary = usageManager.primaryUsage
+            let isConfigured = primary.hasLiveMetrics || !primary.apiKeyOrToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             let rem = primary.primaryRemainingPercent
             HStack(spacing: 6) {
                 ZStack {
                     Circle().stroke(Color.white.opacity(0.10), lineWidth: 2.5).frame(width: 22, height: 22)
                     Circle()
-                        .trim(from: 0.0, to: CGFloat(min(1.0, max(0.0, rem / 100.0))))
-                        .stroke(ringColor(for: rem), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                        .trim(from: 0.0, to: CGFloat(isConfigured ? min(1.0, max(0.0, rem / 100.0)) : 0.0))
+                        .stroke(isConfigured ? ringColor(for: rem) : Color.white.opacity(0.18), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                         .frame(width: 22, height: 22)
-                    ProviderBrandIcon(provider: primary.id, size: 10, color: .white)
+                    ProviderBrandIcon(provider: primary.id, size: 10, color: isConfigured ? .white : Color.white.opacity(0.55))
                 }
-                Text("\(Int(rem))%")
+                Text(isConfigured ? "\(Int(rem))%" : "--")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(isConfigured ? .white : Color.white.opacity(0.5))
             }
             .padding(.top, 5)
         }

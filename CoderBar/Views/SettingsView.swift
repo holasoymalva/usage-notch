@@ -718,54 +718,179 @@ struct ProviderConfigSheet: View {
     
     @ViewBuilder
     private var credentialInputField: some View {
-        switch provider.id.authMethod {
-        case .oauth:
+        switch provider.id {
+        case .cursor:
             VStack(alignment: .leading, spacing: 6) {
-                Text("Token de Acceso OAuth o API Key de respaldo:")
+                Text("Cookie de Sesión (WorkosCursorSessionToken):")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                SecureField("Bearer token o sk-...", text: $usageManager.providers[index].apiKeyOrToken)
+                SecureField("Pega el valor de WorkosCursorSessionToken o la cookie...", text: $usageManager.providers[index].apiKeyOrToken)
                     .textFieldStyle(.roundedBorder)
-            }
-            
-        case .cookies, .cookiesGo:
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Cookie de Sesión:")
+                
+                Text("Endpoint de Cursor (Opcional, por defecto https://cursor.com/api/usage):")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                SecureField("Pega tu cookie de sesión del navegador...", text: $usageManager.providers[index].apiKeyOrToken)
+                TextField("https://cursor.com/api/usage", text: $usageManager.providers[index].customEndpoint)
                     .textFieldStyle(.roundedBorder)
-                Text("Tip: Inicia sesión en el navegador web del servicio, abre DevTools (F12) > Application > Cookies y copia el valor de sesión.")
+                
+                Text("💡 Abre cursor.com en tu navegador, presiona F12 (o Clic derecho > Inspeccionar) > pestaña Application (Almacenamiento) > Cookies > https://cursor.com y copia el valor del token 'WorkosCursorSessionToken'.")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
             
-        case .cli, .gcloud, .local:
+        case .deepseek:
             VStack(alignment: .leading, spacing: 6) {
-                Text("Ruta local o comando:")
+                Text("API Key de DeepSeek:")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                TextField("auto (detectar en PATH)", text: $usageManager.providers[index].apiKeyOrToken)
+                SecureField("sk-...", text: $usageManager.providers[index].apiKeyOrToken)
                     .textFieldStyle(.roundedBorder)
-                Text("Usage Notch consultará la CLI o socket local para obtener estadísticas de uso.")
+                Text("💡 Obtén tu key en platform.deepseek.com/api_keys. CoderBar consultará en vivo tu saldo total, recargas y créditos bonificados.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+        case .openrouter:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("API Key de OpenRouter:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                SecureField("sk-or-...", text: $usageManager.providers[index].apiKeyOrToken)
+                    .textFieldStyle(.roundedBorder)
+                Text("💡 Obtén tu clave en openrouter.ai/keys. Mostrará tu consumo en dólares, límite establecido y peticiones por segundo.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+        case .elevenlabs:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("API Key de ElevenLabs:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                SecureField("Pega tu API Key de ElevenLabs...", text: $usageManager.providers[index].apiKeyOrToken)
+                    .textFieldStyle(.roundedBorder)
+                Text("💡 Consulta en vivo los caracteres restantes de tu plan y la fecha exacta de renovación mensual.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+        case .antigravity:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Detección Automática o Google Gemini API Key (Opcional):")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                SecureField("Dejar vacío para autodetección local o clave AIza...", text: $usageManager.providers[index].apiKeyOrToken)
+                    .textFieldStyle(.roundedBorder)
+                
+                Text("Endpoint o Puerto Local (Opcional, autodetectado dinámicamente):")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                TextField("Autodetectado dinámicamente vía kernel / LSP", text: $usageManager.providers[index].customEndpoint)
+                    .textFieldStyle(.roundedBorder)
+                
+                Text("💡 CoderBar inspecciona dinámicamente los procesos de Antigravity (Antigravity.app y 'agy' CLI) vía Darwin kernel y sockets locales para consultar las cuotas reales de Gemini y Claude/GPT sin requerir configuración manual. También puedes ingresar una Gemini API Key de Google AI Studio.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+        case .ollama:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Endpoint de Ollama:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                TextField("http://localhost:11434", text: $usageManager.providers[index].customEndpoint)
+                    .textFieldStyle(.roundedBorder)
+                Text("💡 CoderBar consultará directamente tu daemon local de Ollama para listar modelos cargados en memoria e instalados.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+        case .codex:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("API Key de OpenAI (sk-... o sk-admin-...):")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                SecureField("sk-...", text: $usageManager.providers[index].apiKeyOrToken)
+                    .textFieldStyle(.roundedBorder)
+                Text("💡 Usa una API Key estándar para verificar conectividad, o una clave de administrador (sk-admin-...) para extraer el gasto en $ de los últimos 30 días.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+        case .claude, .claudeCode:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("API Key de Anthropic (sk-ant-...):")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                SecureField("sk-ant-api03-...", text: $usageManager.providers[index].apiKeyOrToken)
+                    .textFieldStyle(.roundedBorder)
+                Text("💡 Consulta las cabeceras de rate limit en tiempo real (peticiones y tokens por minuto restantes).")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+        case .copilot:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Token de GitHub (Personal Access Token o OAuth):")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                SecureField("ghp_... o gho_...", text: $usageManager.providers[index].apiKeyOrToken)
+                    .textFieldStyle(.roundedBorder)
+                Text("💡 Requiere acceso a GitHub Copilot. CoderBar validará tu SKU y fecha de expiración.")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
             
         default:
-            VStack(alignment: .leading, spacing: 6) {
-                Text("API Key o Token Secreto:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                SecureField("sk-...", text: $usageManager.providers[index].apiKeyOrToken)
-                    .textFieldStyle(.roundedBorder)
+            switch provider.id.authMethod {
+            case .oauth:
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Token de Acceso OAuth o API Key de respaldo:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    SecureField("Bearer token o sk-...", text: $usageManager.providers[index].apiKeyOrToken)
+                        .textFieldStyle(.roundedBorder)
+                }
                 
-                Text("Endpoint personalizado (opcional):")
-                    .font(.caption)
-                    .padding(.top, 4)
-                    .foregroundColor(.secondary)
-                TextField("https://api.proveedor.com/v1/usage", text: $usageManager.providers[index].customEndpoint)
-                    .textFieldStyle(.roundedBorder)
+            case .cookies, .cookiesGo:
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Cookie de Sesión:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    SecureField("Pega tu cookie de sesión del navegador...", text: $usageManager.providers[index].apiKeyOrToken)
+                        .textFieldStyle(.roundedBorder)
+                    Text("Tip: Inicia sesión en la web del servicio, abre DevTools (F12) > Application > Cookies y copia el token.")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                
+            case .cli, .gcloud, .local:
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Ruta local o comando:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField("auto (detectar en PATH)", text: $usageManager.providers[index].apiKeyOrToken)
+                        .textFieldStyle(.roundedBorder)
+                    Text("CoderBar consultará la CLI o socket local para obtener estadísticas de uso.")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                
+            default:
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("API Key o Token Secreto:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    SecureField("sk-...", text: $usageManager.providers[index].apiKeyOrToken)
+                        .textFieldStyle(.roundedBorder)
+                    
+                    Text("Endpoint personalizado (opcional):")
+                        .font(.caption)
+                        .padding(.top, 4)
+                        .foregroundColor(.secondary)
+                    TextField("https://api.proveedor.com/v1/usage", text: $usageManager.providers[index].customEndpoint)
+                        .textFieldStyle(.roundedBorder)
+                }
             }
         }
     }

@@ -48,11 +48,27 @@ public struct UsagePopoverView: View {
                     .padding(.top, 1)
             }
             
-            // Section 1: Current session
+            // Section 1: Primary Metric
             VStack(alignment: .leading, spacing: 6) {
-                Text("Current session")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
+                HStack {
+                    Text(usage.primaryLabel)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    if usage.hasLiveMetrics && usage.maxCount > 0 && usage.unitName != "%" {
+                        if usage.unitName == "$" {
+                            Text("$\(String(format: "%.2f", usage.currentCount)) / $\(String(format: "%.2f", usage.maxCount))")
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(Color(red: 0.05, green: 0.90, blue: 0.48))
+                        } else {
+                            Text("\(Int(usage.currentCount)) / \(Int(usage.maxCount)) \(usage.unitName)")
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(Color(red: 0.05, green: 0.90, blue: 0.48))
+                        }
+                    }
+                }
                 
                 // Thin progress bar
                 GeometryReader { geo in
@@ -70,7 +86,7 @@ public struct UsagePopoverView: View {
                 .frame(height: 4.5)
                 
                 HStack {
-                    Text("\(Int(usage.primaryRemainingPercent))% Remaining")
+                    Text("\(Int(usage.primaryRemainingPercent))% Restante")
                         .font(.system(size: 11.5, weight: .regular))
                         .foregroundColor(Color.white.opacity(0.72))
                     
@@ -82,67 +98,99 @@ public struct UsagePopoverView: View {
                 }
             }
             
-            // Section 2: Weekly
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Weekly")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
-                
-                // Thin progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.white.opacity(0.12))
-                            .frame(height: 4.5)
-                        
-                        let pct = usage.secondaryRemainingPercent / 100.0
-                        Capsule()
-                            .fill(Color(red: 0.05, green: 0.90, blue: 0.48))
-                            .frame(width: max(4.5, geo.size.width * CGFloat(min(1.0, max(0.0, pct)))), height: 4.5)
-                    }
-                }
-                .frame(height: 4.5)
-                
-                HStack {
-                    Text("\(Int(usage.secondaryRemainingPercent))% Remaining")
-                        .font(.system(size: 11.5, weight: .regular))
-                        .foregroundColor(Color.white.opacity(0.72))
-                    
-                    Spacer()
-                    
-                    Text(usage.secondaryResetTimeString)
-                        .font(.system(size: 11.5, weight: .regular))
-                        .foregroundColor(Color.white.opacity(0.55))
-                }
-            }
-            
-            // Section 3: Token usage (e.g. for Codex)
-            if usage.id == .codex || usage.tokensToday != nil {
-                VStack(alignment: .leading, spacing: 7) {
-                    Text("Token usage")
+            // Section 2: Secondary Metric (e.g. Weekly or Tier Allowance)
+            if usage.secondaryUsedPercent > 0 || usage.id == .antigravity || usage.id == .cursor || usage.id == .codex {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(usage.secondaryLabel)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.white)
                     
-                    HStack {
-                        Text("Today")
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundColor(Color.white.opacity(0.72))
-                        Spacer()
-                        Text(usage.tokensToday ?? "20.3m · $10.92")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.white)
+                    // Thin progress bar
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.white.opacity(0.12))
+                                .frame(height: 4.5)
+                            
+                            let pct = usage.secondaryRemainingPercent / 100.0
+                            Capsule()
+                                .fill(Color(red: 0.05, green: 0.90, blue: 0.48))
+                                .frame(width: max(4.5, geo.size.width * CGFloat(min(1.0, max(0.0, pct)))), height: 4.5)
+                        }
                     }
+                    .frame(height: 4.5)
                     
                     HStack {
-                        Text("Last 30 days")
-                            .font(.system(size: 12, weight: .regular))
+                        Text("\(Int(usage.secondaryRemainingPercent))% Restante")
+                            .font(.system(size: 11.5, weight: .regular))
                             .foregroundColor(Color.white.opacity(0.72))
+                        
                         Spacer()
-                        Text(usage.tokensMonth ?? "1.25b · $213.58")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.white)
+                        
+                        Text(usage.secondaryResetTimeString)
+                            .font(.system(size: 11.5, weight: .regular))
+                            .foregroundColor(Color.white.opacity(0.55))
                     }
                 }
+            }
+            
+            // Section 3: Token / Model Stats
+            if usage.tokensToday != nil || usage.tokensMonth != nil {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text("Detalles de Consumo")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                    
+                    if let today = usage.tokensToday {
+                        HStack {
+                            Text("Estado")
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundColor(Color.white.opacity(0.72))
+                            Spacer()
+                            Text(today)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                        }
+                    }
+                    
+                    if let month = usage.tokensMonth {
+                        HStack {
+                            Text("Ciclo")
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundColor(Color.white.opacity(0.72))
+                            Spacer()
+                            Text(month)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+            }
+            
+            Divider().opacity(0.15)
+            
+            // Footer: Live status & sync action
+            HStack(spacing: 8) {
+                Text(usage.lastSyncStatus)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.75))
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                Button(action: {
+                    Task {
+                        _ = await APIUsageService.shared.testAndSync(providerId: usage.id)
+                    }
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(Color(red: 0.05, green: 0.90, blue: 0.48))
+                }
+                .buttonStyle(.plain)
+                .help("Sincronizar ahora")
             }
         }
         .padding(.leading, usageManager.position != .rightEdge ? 22 : 16)

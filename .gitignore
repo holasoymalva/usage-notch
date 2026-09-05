@@ -20,6 +20,7 @@ DerivedData/
 # Swift Package Manager
 .build/
 .swiftpm/
+.build_cache/
 
 # Fastlane
 fastlane/report.xml
