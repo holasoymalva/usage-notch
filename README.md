@@ -1,3 +1,14 @@
+<p align="center">
+  <img src="assets/banner.png" alt="Usage Notch Banner" width="100%">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-macOS%2015%2B-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Platform: macOS">
+  <img src="https://img.shields.io/badge/Swift-6.0-F05138?style=for-the-badge&logo=swift&logoColor=white" alt="Swift 6">
+  <a href="PRIVACY_POLICY.md"><img src="https://img.shields.io/badge/Privacy-Zero%20Telemetry-05e67c?style=for-the-badge&logo=shield&logoColor=black" alt="Privacy First"></a>
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License: MIT">
+</p>
+
 # Usage Notch 🚀
 
 > **A minimalist native macOS HUD to monitor your AI assistant quotas & consumption directly from the screen bezel or notch.**
