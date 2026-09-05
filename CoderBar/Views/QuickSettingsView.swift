@@ -236,12 +236,13 @@ public struct QuickSettingsPopoverView: View {
                 .buttonStyle(.plain)
                 
                 Button(action: {
+                    usageManager.isSettingsPopoverOpen = false
                     usageManager.isHudVisible = false
                 }) {
                     HStack(spacing: 5) {
                         Image(systemName: "eye.slash")
                             .font(.system(size: 11, weight: .medium))
-                        Text("Ocultar")
+                        Text("Ocultar Dock")
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(Color.white.opacity(0.65))
@@ -250,6 +251,7 @@ public struct QuickSettingsPopoverView: View {
                     .background(RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.06)))
                 }
                 .buttonStyle(.plain)
+                .help("Oculta el dock flotante de la pantalla. Puedes volverlo a mostrar en cualquier momento desde la barra de menú superior.")
             }
         }
         .padding(.leading, usageManager.position != .rightEdge ? 22 : 16)

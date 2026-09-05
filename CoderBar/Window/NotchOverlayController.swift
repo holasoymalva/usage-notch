@@ -184,8 +184,11 @@ public final class NotchOverlayController: NSObject {
     }
     
     public func repositionPanels() {
+        if overlayPanel == nil {
+            createPanels()
+        }
         guard let panel = overlayPanel,
-              let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+              let screen = panel.screen ?? NSScreen.main ?? NSScreen.screens.first else { return }
         
         let manager = UsageManager.shared
         guard manager.isHudVisible else {
@@ -248,5 +251,8 @@ public final class NotchOverlayController: NSObject {
         }
         
         panel.setFrame(frame, display: true, animate: false)
+        if manager.isHudVisible && !panel.isVisible {
+            panel.orderFrontRegardless()
+        }
     }
 }

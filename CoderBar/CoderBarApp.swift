@@ -8,7 +8,9 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Task { @MainActor in
-            NotchOverlayController.shared.showWindow()
+            if UsageManager.shared.isHudVisible {
+                NotchOverlayController.shared.showWindow()
+            }
             // Initial sync if keys are present
             await APIUsageService.shared.syncAllServices()
         }
@@ -25,7 +27,7 @@ struct CoderBarApp: App {
         // Menu Bar Companion
         MenuBarExtra("Usage Notch", systemImage: "sparkles") {
             VStack(alignment: .leading) {
-                Text("Usage Notch")
+                Text("CoderBar — Control")
                     .font(.headline)
                 
                 Divider()
@@ -49,8 +51,10 @@ struct CoderBarApp: App {
                     Text("Sincronizar APIs Ahora")
                 }
                 
-                Button(usageManager.isHudVisible ? "Ocultar Notch" : "Mostrar Notch") {
+                Button(action: {
                     usageManager.isHudVisible.toggle()
+                }) {
+                    Text(usageManager.isHudVisible ? "Ocultar Dock Flotante (Notch)" : "Mostrar Dock Flotante (Notch)")
                 }
                 
                 Divider()

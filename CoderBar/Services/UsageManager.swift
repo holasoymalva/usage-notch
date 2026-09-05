@@ -80,6 +80,7 @@ public final class UsageManager: ObservableObject {
     @Published public var isHudVisible: Bool = true {
         didSet {
             UserDefaults.standard.set(isHudVisible, forKey: "usage_notch_visible")
+            notifyVisibilityChanged()
             notifyLayoutChange()
         }
     }
@@ -185,6 +186,10 @@ public final class UsageManager: ObservableObject {
     
     public func notifyLayoutChange() {
         NotificationCenter.default.post(name: .notchLayoutChanged, object: nil)
+    }
+    
+    public func notifyVisibilityChanged() {
+        NotificationCenter.default.post(name: .notchVisibilityChanged, object: nil)
     }
     
     public func notifyExpandStateChanged() {

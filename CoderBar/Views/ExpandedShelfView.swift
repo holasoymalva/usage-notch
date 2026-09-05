@@ -7,7 +7,6 @@ import SwiftUI
 
 public struct ExpandedShelfView: View {
     @ObservedObject var usageManager = UsageManager.shared
-    @State private var dismissTask: Task<Void, Never>? = nil
     
     private var activeProviders: [ProviderUsage] {
         let list = usageManager.providers.filter { $0.isEnabled }
@@ -43,21 +42,6 @@ public struct ExpandedShelfView: View {
                 rightEdgeLayout
             case .topNotch:
                 topNotchLayout
-            }
-        }
-        .onHover { isHovered in
-            if !isHovered {
-                dismissTask?.cancel()
-                dismissTask = Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 400_000_000)
-                    guard !Task.isCancelled else { return }
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        usageManager.selectedProviderId = nil
-                        usageManager.isSettingsPopoverOpen = false
-                    }
-                }
-            } else {
-                dismissTask?.cancel()
             }
         }
     }
@@ -139,8 +123,7 @@ public struct ExpandedShelfView: View {
                                 }
                             },
                             onHoverChanged: { isHovered in
-                                if isHovered {
-                                    dismissTask?.cancel()
+                                if isHovered && (usageManager.selectedProviderId != nil || usageManager.isSettingsPopoverOpen) {
                                     withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                         usageManager.selectedProviderId = item.id
                                     }
@@ -158,8 +141,7 @@ public struct ExpandedShelfView: View {
                             }
                         },
                         onHoverChanged: { isHovered in
-                            if isHovered {
-                                dismissTask?.cancel()
+                            if isHovered && (usageManager.selectedProviderId != nil || usageManager.isSettingsPopoverOpen) {
                                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                     usageManager.isSettingsPopoverOpen = true
                                 }
@@ -301,8 +283,7 @@ public struct ExpandedShelfView: View {
                                 }
                             },
                             onHoverChanged: { isHovered in
-                                if isHovered {
-                                    dismissTask?.cancel()
+                                if isHovered && (usageManager.selectedProviderId != nil || usageManager.isSettingsPopoverOpen) {
                                     withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                         usageManager.selectedProviderId = item.id
                                     }
@@ -320,8 +301,7 @@ public struct ExpandedShelfView: View {
                             }
                         },
                         onHoverChanged: { isHovered in
-                            if isHovered {
-                                dismissTask?.cancel()
+                            if isHovered && (usageManager.selectedProviderId != nil || usageManager.isSettingsPopoverOpen) {
                                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                     usageManager.isSettingsPopoverOpen = true
                                 }
@@ -362,7 +342,7 @@ public struct ExpandedShelfView: View {
                                 }
                             },
                             onHoverChanged: { isHovered in
-                                if isHovered {
+                                if isHovered && (usageManager.selectedProviderId != nil || usageManager.isSettingsPopoverOpen) {
                                     withAnimation {
                                         usageManager.selectedProviderId = item.id
                                     }
@@ -379,7 +359,7 @@ public struct ExpandedShelfView: View {
                             }
                         },
                         onHoverChanged: { isHovered in
-                            if isHovered {
+                            if isHovered && (usageManager.selectedProviderId != nil || usageManager.isSettingsPopoverOpen) {
                                 withAnimation {
                                     usageManager.isSettingsPopoverOpen = true
                                 }
