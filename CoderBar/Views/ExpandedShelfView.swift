@@ -178,8 +178,11 @@ public struct ExpandedShelfView: View {
             // 2. Contextual Popover Card with Arrow
             if let usage = currentPopoverUsage {
                 let gaugeCenterY = 48.0 + CGFloat(activeIndex) * (64.0 + 16.0) + 22.0
-                let cardTop = max(8.0, min(dockHeight - 160.0, gaugeCenterY - 45.0))
-                let arrowY = max(22.0, gaugeCenterY - cardTop)
+                let usageCardHeight: CGFloat = 300.0
+                let idealCardTop = gaugeCenterY - 60.0
+                let maxCardTop = max(10.0, dockHeight - usageCardHeight - 12.0)
+                let cardTop = max(10.0, min(maxCardTop, idealCardTop))
+                let arrowY = max(22.0, min(usageCardHeight - 22.0, gaugeCenterY - cardTop))
                 
                 UsagePopoverView(
                     usageManager: usageManager,
@@ -199,8 +202,11 @@ public struct ExpandedShelfView: View {
             } else if usageManager.isSettingsPopoverOpen {
                 let settingsIndex = activeProviders.count
                 let gaugeCenterY = 48.0 + CGFloat(settingsIndex) * (64.0 + 16.0) + 22.0
-                let cardTop = max(8.0, min(dockHeight - 220.0, gaugeCenterY - 110.0))
-                let arrowY = max(22.0, gaugeCenterY - cardTop)
+                let settingsCardHeight: CGFloat = 295.0
+                let idealCardTop = gaugeCenterY - 225.0
+                let maxCardTop = max(10.0, dockHeight - settingsCardHeight - 12.0)
+                let cardTop = max(10.0, min(maxCardTop, idealCardTop))
+                let arrowY = max(22.0, min(settingsCardHeight - 22.0, gaugeCenterY - cardTop))
                 
                 QuickSettingsPopoverView(
                     usageManager: usageManager,
@@ -218,7 +224,7 @@ public struct ExpandedShelfView: View {
                 ))
             }
         }
-        .frame(width: 420, height: max(dockHeight + 60, 420), alignment: .topLeading)
+        .frame(width: 430, height: max(dockHeight + 160, 500), alignment: .topLeading)
     }
     
     // MARK: - Right Edge Layout
@@ -229,8 +235,11 @@ public struct ExpandedShelfView: View {
             // Popover Card
             if let usage = currentPopoverUsage {
                 let gaugeCenterY = 48.0 + CGFloat(activeIndex) * (64.0 + 16.0) + 22.0
-                let cardTop = max(8.0, min(dockHeight - 160.0, gaugeCenterY - 45.0))
-                let arrowY = max(22.0, gaugeCenterY - cardTop)
+                let usageCardHeight: CGFloat = 300.0
+                let idealCardTop = gaugeCenterY - 60.0
+                let maxCardTop = max(10.0, dockHeight - usageCardHeight - 12.0)
+                let cardTop = max(10.0, min(maxCardTop, idealCardTop))
+                let arrowY = max(22.0, min(usageCardHeight - 22.0, gaugeCenterY - cardTop))
                 
                 UsagePopoverView(
                     usageManager: usageManager,
@@ -250,8 +259,11 @@ public struct ExpandedShelfView: View {
             } else if usageManager.isSettingsPopoverOpen {
                 let settingsIndex = activeProviders.count
                 let gaugeCenterY = 48.0 + CGFloat(settingsIndex) * (64.0 + 16.0) + 22.0
-                let cardTop = max(8.0, min(dockHeight - 220.0, gaugeCenterY - 110.0))
-                let arrowY = max(22.0, gaugeCenterY - cardTop)
+                let settingsCardHeight: CGFloat = 295.0
+                let idealCardTop = gaugeCenterY - 225.0
+                let maxCardTop = max(10.0, dockHeight - settingsCardHeight - 12.0)
+                let cardTop = max(10.0, min(maxCardTop, idealCardTop))
+                let arrowY = max(22.0, min(settingsCardHeight - 22.0, gaugeCenterY - cardTop))
                 
                 QuickSettingsPopoverView(
                     usageManager: usageManager,
@@ -325,7 +337,7 @@ public struct ExpandedShelfView: View {
                 contextMenuItems
             }
         }
-        .frame(width: 420, height: max(dockHeight + 60, 420), alignment: .topTrailing)
+        .frame(width: 430, height: max(dockHeight + 160, 500), alignment: .topTrailing)
     }
     
     // MARK: - Top Notch Layout

@@ -110,15 +110,15 @@ public struct QuickSettingsPopoverView: View {
     }
     
     public var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 11) {
             // Header
             HStack(spacing: 8) {
                 Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(Color(red: 0.05, green: 0.90, blue: 0.48))
                 
                 Text("Ajustes del Dock")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.white)
                 
                 Spacer()
@@ -132,7 +132,7 @@ public struct QuickSettingsPopoverView: View {
             }
             
             // Section 1: Dirección y Posición
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text("DIRECCIÓN / BORDE")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundColor(Color.white.opacity(0.50))
@@ -157,7 +157,7 @@ public struct QuickSettingsPopoverView: View {
             }
             
             // Section 2: Alineación Vertical
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text("ALINEACIÓN VERTICAL")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundColor(Color.white.opacity(0.50))
@@ -181,15 +181,15 @@ public struct QuickSettingsPopoverView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8)
                             .fill(Color.white.opacity(0.12))
-                            .frame(width: 32, height: 32)
+                            .frame(width: 30, height: 30)
                         Image(systemName: "gearshape.2.fill")
-                            .font(.system(size: 15))
+                            .font(.system(size: 14))
                             .foregroundColor(.white)
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Abrir Preferencias...")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.system(size: 12.5, weight: .bold))
                             .foregroundColor(.white)
                         Text("37 Proveedores, API Keys y Cuotas")
                             .font(.system(size: 10.5, weight: .regular))
@@ -203,7 +203,7 @@ public struct QuickSettingsPopoverView: View {
                         .foregroundColor(Color.white.opacity(0.35))
                 }
                 .padding(.horizontal, 10)
-                .padding(.vertical, 8)
+                .padding(.vertical, 7)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
                         .fill(Color.white.opacity(0.07))
@@ -254,7 +254,7 @@ public struct QuickSettingsPopoverView: View {
         }
         .padding(.leading, usageManager.position != .rightEdge ? 22 : 16)
         .padding(.trailing, usageManager.position == .rightEdge ? 22 : 16)
-        .padding(.vertical, 16)
+        .padding(.vertical, 13)
         .frame(width: 315)
         .background(
             ZStack {

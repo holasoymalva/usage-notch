@@ -40,8 +40,8 @@ final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
             // Check if popover is visible and point is inside popover card
             if isAnyPopoverOpen {
                 let popoverMinX: CGFloat = 66
-                let popoverMaxX: CGFloat = 66 + 330
-                if point.x >= popoverMinX && point.x <= popoverMaxX && effectiveYFromTop >= 0 && effectiveYFromTop <= max(dockH + 60, 420) {
+                let popoverMaxX: CGFloat = 66 + 345
+                if point.x >= popoverMinX && point.x <= popoverMaxX && effectiveYFromTop >= 0 && effectiveYFromTop <= max(dockH + 160, 500) {
                     return super.hitTest(point)
                 }
             }
@@ -54,8 +54,8 @@ final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
             }
             if isAnyPopoverOpen {
                 let popoverMaxX = bounds.width - 66
-                let popoverMinX = bounds.width - 66 - 330
-                if point.x >= popoverMinX && point.x <= popoverMaxX && effectiveYFromTop >= 0 && effectiveYFromTop <= max(dockH + 60, 420) {
+                let popoverMinX = bounds.width - 66 - 345
+                if point.x >= popoverMinX && point.x <= popoverMaxX && effectiveYFromTop >= 0 && effectiveYFromTop <= max(dockH + 160, 500) {
                     return super.hitTest(point)
                 }
             }
@@ -197,8 +197,8 @@ public final class NotchOverlayController: NSObject {
         let visibleFrame = screen.visibleFrame
         let vOffset = CGFloat(manager.verticalOffset)
         let dockH = calculatedDockHeight
-        let totalW: CGFloat = 420
-        let totalH: CGFloat = max(dockH + 60, 420)
+        let totalW: CGFloat = 430
+        let totalH: CGFloat = max(dockH + 160, 500)
         
         var frame = NSRect.zero
         
@@ -239,7 +239,7 @@ public final class NotchOverlayController: NSObject {
             
         case .topNotch:
             let notchW: CGFloat = 460
-            let notchH: CGFloat = 360
+            let notchH: CGFloat = 450
             let x = screenFrame.midX - (notchW / 2)
             let y = screenFrame.maxY - notchH
             frame = NSRect(x: x, y: y, width: notchW, height: notchH)
