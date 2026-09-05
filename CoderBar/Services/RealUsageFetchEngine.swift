@@ -61,9 +61,25 @@ public struct RealUsageResult {
 }
 
 // Delegate that permits localhost / 127.0.0.1 self-signed TLS certificates (used by Antigravity local language server)
-final class LocalhostInsecureSessionDelegate: NSObject, URLSessionDelegate, Sendable {
+final class LocalhostInsecureSessionDelegate: NSObject, URLSessionDelegate, URLSessionTaskDelegate, Sendable {
     func urlSession(
         _ session: URLSession,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+           let serverTrust = challenge.protectionSpace.serverTrust,
+           let host = challenge.protectionSpace.host as String?,
+           (host == "127.0.0.1" || host == "localhost") {
+            completionHandler(.useCredential, URLCredential(trust: serverTrust))
+            return
+        }
+        completionHandler(.performDefaultHandling, nil)
+    }
+    
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
         didReceive challenge: URLAuthenticationChallenge,
         completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
     ) {
@@ -593,13 +609,22 @@ public actor RealUsageFetchEngine {
         let discoveredProcesses = DarwinProcessEnumerator.findAntigravityProcesses()
         for proc in discoveredProcesses {
             let csrf = proc.csrfToken ?? proc.extensionServerCsrfToken ?? (token.isEmpty ? nil : token)
-            for port in proc.listeningPorts {
-                if !targets.contains(where: { $0.port == port }) {
-                    targets.append(ProbeTarget(port: port, csrfToken: csrf))
+            if let bp = proc.hostBridgePort {
+                // High priority: The language server HTTP and HTTPS endpoints run adjacent to host_bridge_url
+                if !targets.contains(where: { $0.port == bp + 2 }) {
+                    targets.append(ProbeTarget(port: bp + 2, csrfToken: csrf))
+                }
+                if !targets.contains(where: { $0.port == bp + 1 }) {
+                    targets.append(ProbeTarget(port: bp + 1, csrfToken: csrf))
                 }
             }
             if let extPort = proc.extensionServerPort, !targets.contains(where: { $0.port == extPort }) {
                 targets.append(ProbeTarget(port: extPort, csrfToken: csrf))
+            }
+            for port in proc.listeningPorts {
+                if !targets.contains(where: { $0.port == port }) {
+                    targets.append(ProbeTarget(port: port, csrfToken: csrf))
+                }
             }
         }
         
@@ -688,9 +713,9 @@ public actor RealUsageFetchEngine {
             let userStatus: UserStatus?
         }
         
-        // Probe discovered targets (trying HTTPS first due to local self-signed TLS server, then HTTP)
+        // Probe discovered targets (testing HTTP first to avoid TLS abort on proxy sockets)
         for target in targets {
-            let schemes = ["https", "http"]
+            let schemes = ["http", "https"]
             for scheme in schemes {
                 // 1. Try RetrieveUserQuotaSummary (Primary Antigravity 2.0 Quota Grouping)
                 if let quotaSummaryURL = URL(string: "\(scheme)://127.0.0.1:\(target.port)/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary") {
@@ -702,63 +727,72 @@ public actor RealUsageFetchEngine {
                         req.setValue(csrf, forHTTPHeaderField: "X-Codeium-Csrf-Token")
                     }
                     req.httpBody = "{}".data(using: .utf8)
-                    req.timeoutInterval = 1.5
+                    req.timeoutInterval = 0.8
                     
-                    if let (data, response) = try? await urlSession.data(for: req),
-                       let http = response as? HTTPURLResponse, http.statusCode == 200,
-                       let summary = try? JSONDecoder().decode(AntigravityQuotaSummaryResponse.self, from: data) {
+                    do {
+                        let (data, response) = try await urlSession.data(for: req)
+                        guard let http = response as? HTTPURLResponse else { continue }
                         
-                        var geminiBucket: AntigravityQuotaSummaryResponse.Bucket?
-                        var claudeBucket: AntigravityQuotaSummaryResponse.Bucket?
-                        
-                        for group in summary.resolvedGroups {
-                            let groupName = (group.displayName ?? "").lowercased()
-                            if groupName.contains("gemini") {
-                                geminiBucket = group.buckets?.first(where: { !($0.disabled ?? false) && $0.fraction != nil })
-                            } else if groupName.contains("claude") || groupName.contains("gpt") {
-                                claudeBucket = group.buckets?.first(where: { !($0.disabled ?? false) && $0.fraction != nil })
-                            }
+                        // If an HTTP proxy was hit, skip TLS probing on this port to prevent -9816 SSL errors
+                        if http.statusCode == 400, let str = String(data: data, encoding: .utf8), str.contains("proxy") {
+                            break
                         }
                         
-                        if geminiBucket != nil || claudeBucket != nil {
-                            let geminiFraction = geminiBucket?.fraction ?? 1.0
-                            let geminiUsedPct = max(0.0, min(100.0, (1.0 - geminiFraction) * 100.0))
+                        if http.statusCode == 200, let summary = try? JSONDecoder().decode(AntigravityQuotaSummaryResponse.self, from: data) {
+                            var geminiBucket: AntigravityQuotaSummaryResponse.Bucket?
+                            var claudeBucket: AntigravityQuotaSummaryResponse.Bucket?
                             
-                            let claudeFraction = claudeBucket?.fraction ?? 1.0
-                            let claudeUsedPct = max(0.0, min(100.0, (1.0 - claudeFraction) * 100.0))
-                            
-                            var geminiResetDate: Date? = nil
-                            if let resetStr = geminiBucket?.resetTime {
-                                geminiResetDate = ISO8601DateFormatter().date(from: resetStr)
+                            for group in summary.resolvedGroups {
+                                let groupName = (group.displayName ?? "").lowercased()
+                                if groupName.contains("gemini") {
+                                    geminiBucket = group.buckets?.first(where: { !($0.disabled ?? false) && $0.fraction != nil })
+                                } else if groupName.contains("claude") || groupName.contains("gpt") {
+                                    claudeBucket = group.buckets?.first(where: { !($0.disabled ?? false) && $0.fraction != nil })
+                                }
                             }
                             
-                            var claudeResetDate: Date? = nil
-                            if let resetStr = claudeBucket?.resetTime {
-                                claudeResetDate = ISO8601DateFormatter().date(from: resetStr)
+                            if geminiBucket != nil || claudeBucket != nil {
+                                let geminiFraction = geminiBucket?.fraction ?? 1.0
+                                let geminiUsedPct = max(0.0, min(100.0, (1.0 - geminiFraction) * 100.0))
+                                
+                                let claudeFraction = claudeBucket?.fraction ?? 1.0
+                                let claudeUsedPct = max(0.0, min(100.0, (1.0 - claudeFraction) * 100.0))
+                                
+                                var geminiResetDate: Date? = nil
+                                if let resetStr = geminiBucket?.resetTime {
+                                    geminiResetDate = ISO8601DateFormatter().date(from: resetStr)
+                                }
+                                
+                                var claudeResetDate: Date? = nil
+                                if let resetStr = claudeBucket?.resetTime {
+                                    claudeResetDate = ISO8601DateFormatter().date(from: resetStr)
+                                }
+                                
+                                let geminiTitle = geminiBucket?.displayName ?? "Gemini Models"
+                                let claudeTitle = claudeBucket?.displayName ?? "Claude/GPT Models"
+                                
+                                return RealUsageResult(
+                                    success: true,
+                                    message: "Antigravity sincronizado (Puerto \(target.port)): Gemini \(String(format: "%.1f", geminiUsedPct))%, Claude/GPT \(String(format: "%.1f", claudeUsedPct))%",
+                                    lastSyncStatus: "🟢 Gemini: \(Int(geminiUsedPct))% · Claude: \(Int(claudeUsedPct))%",
+                                    hasLiveMetrics: true,
+                                    primaryLabel: "Gemini (\(geminiTitle))",
+                                    primaryUsedPercent: geminiUsedPct,
+                                    primaryResetDate: geminiResetDate,
+                                    primaryResetIntervalMinutes: 300,
+                                    secondaryLabel: "Claude/GPT (\(claudeTitle))",
+                                    secondaryUsedPercent: claudeUsedPct,
+                                    secondaryResetDate: claudeResetDate,
+                                    currentCount: geminiUsedPct,
+                                    maxCount: 100.0,
+                                    unitName: "%",
+                                    tokensToday: "Gemini: \(String(format: "%.1f", geminiUsedPct))% usado",
+                                    tokensMonth: "Claude/GPT: \(String(format: "%.1f", claudeUsedPct))% usado"
+                                )
                             }
-                            
-                            let geminiTitle = geminiBucket?.displayName ?? "Gemini Models"
-                            let claudeTitle = claudeBucket?.displayName ?? "Claude/GPT Models"
-                            
-                            return RealUsageResult(
-                                success: true,
-                                message: "Antigravity sincronizado (Puerto \(target.port)): Gemini \(String(format: "%.1f", geminiUsedPct))%, Claude/GPT \(String(format: "%.1f", claudeUsedPct))%",
-                                lastSyncStatus: "🟢 Gemini: \(Int(geminiUsedPct))% · Claude: \(Int(claudeUsedPct))%",
-                                hasLiveMetrics: true,
-                                primaryLabel: "Gemini (\(geminiTitle))",
-                                primaryUsedPercent: geminiUsedPct,
-                                primaryResetDate: geminiResetDate,
-                                primaryResetIntervalMinutes: 300,
-                                secondaryLabel: "Claude/GPT (\(claudeTitle))",
-                                secondaryUsedPercent: claudeUsedPct,
-                                secondaryResetDate: claudeResetDate,
-                                currentCount: geminiUsedPct,
-                                maxCount: 100.0,
-                                unitName: "%",
-                                tokensToday: "Gemini: \(String(format: "%.1f", geminiUsedPct))% usado",
-                                tokensMonth: "Claude/GPT: \(String(format: "%.1f", claudeUsedPct))% usado"
-                            )
                         }
+                    } catch {
+                        // Suppress connection/TLS failures on port probes
                     }
                 }
                 
@@ -772,42 +806,46 @@ public actor RealUsageFetchEngine {
                         req.setValue(csrf, forHTTPHeaderField: "X-Codeium-Csrf-Token")
                     }
                     req.httpBody = "{}".data(using: .utf8)
-                    req.timeoutInterval = 1.5
+                    req.timeoutInterval = 0.8
                     
-                    if let (data, response) = try? await urlSession.data(for: req),
-                       let http = response as? HTTPURLResponse, http.statusCode == 200,
-                       let userStatusRes = try? JSONDecoder().decode(AntigravityUserStatusResponse.self, from: data) {
+                    do {
+                        let (data, response) = try await urlSession.data(for: req)
+                        guard let http = response as? HTTPURLResponse else { continue }
                         
-                        let planName = userStatusRes.userStatus?.planStatus?.planInfo?.preferredName ?? userStatusRes.userStatus?.userTier?.name ?? "Google AI"
-                        let configs = userStatusRes.userStatus?.cascadeModelConfigData?.clientModelConfigs ?? []
-                        
-                        let geminiConfig = configs.first(where: { ($0.label ?? "").lowercased().contains("gemini") })
-                        let claudeConfig = configs.first(where: { ($0.label ?? "").lowercased().contains("claude") || ($0.label ?? "").lowercased().contains("gpt") })
-                        
-                        let geminiUsedPct = geminiConfig?.quotaInfo?.remainingFraction.map { max(0.0, min(100.0, (1.0 - $0) * 100.0)) } ?? 0.0
-                        let claudeUsedPct = claudeConfig?.quotaInfo?.remainingFraction.map { max(0.0, min(100.0, (1.0 - $0) * 100.0)) } ?? 0.0
-                        
-                        var geminiResetDate: Date? = nil
-                        if let resetStr = geminiConfig?.quotaInfo?.resetTime {
-                            geminiResetDate = ISO8601DateFormatter().date(from: resetStr)
+                        if http.statusCode == 200, let userStatusRes = try? JSONDecoder().decode(AntigravityUserStatusResponse.self, from: data) {
+                            let planName = userStatusRes.userStatus?.planStatus?.planInfo?.preferredName ?? userStatusRes.userStatus?.userTier?.name ?? "Google AI"
+                            let configs = userStatusRes.userStatus?.cascadeModelConfigData?.clientModelConfigs ?? []
+                            
+                            let geminiConfig = configs.first(where: { ($0.label ?? "").lowercased().contains("gemini") })
+                            let claudeConfig = configs.first(where: { ($0.label ?? "").lowercased().contains("claude") || ($0.label ?? "").lowercased().contains("gpt") })
+                            
+                            let geminiUsedPct = geminiConfig?.quotaInfo?.remainingFraction.map { max(0.0, min(100.0, (1.0 - $0) * 100.0)) } ?? 0.0
+                            let claudeUsedPct = claudeConfig?.quotaInfo?.remainingFraction.map { max(0.0, min(100.0, (1.0 - $0) * 100.0)) } ?? 0.0
+                            
+                            var geminiResetDate: Date? = nil
+                            if let resetStr = geminiConfig?.quotaInfo?.resetTime {
+                                geminiResetDate = ISO8601DateFormatter().date(from: resetStr)
+                            }
+                            
+                            return RealUsageResult(
+                                success: true,
+                                message: "Antigravity conectado (\(planName) en puerto \(target.port))",
+                                lastSyncStatus: "🟢 \(planName) (Puerto \(target.port))",
+                                hasLiveMetrics: true,
+                                primaryLabel: geminiConfig?.label ?? "Gemini Pro/Flash",
+                                primaryUsedPercent: geminiUsedPct,
+                                primaryResetDate: geminiResetDate,
+                                secondaryLabel: claudeConfig?.label ?? "Claude Models",
+                                secondaryUsedPercent: claudeUsedPct,
+                                currentCount: geminiUsedPct,
+                                maxCount: 100.0,
+                                unitName: "%",
+                                tokensToday: "Gemini: \(String(format: "%.1f", geminiUsedPct))% usado",
+                                tokensMonth: "Plan: \(planName)"
+                            )
                         }
-                        
-                        return RealUsageResult(
-                            success: true,
-                            message: "Antigravity conectado (\(planName) en puerto \(target.port))",
-                            lastSyncStatus: "🟢 \(planName) (Puerto \(target.port))",
-                            hasLiveMetrics: true,
-                            primaryLabel: geminiConfig?.label ?? "Gemini Pro/Flash",
-                            primaryUsedPercent: geminiUsedPct,
-                            primaryResetDate: geminiResetDate,
-                            secondaryLabel: claudeConfig?.label ?? "Claude Models",
-                            secondaryUsedPercent: claudeUsedPct,
-                            currentCount: geminiUsedPct,
-                            maxCount: 100.0,
-                            unitName: "%",
-                            tokensToday: "Gemini: \(String(format: "%.1f", geminiUsedPct))% usado",
-                            tokensMonth: "Plan: \(planName)"
-                        )
+                    } catch {
+                        // Suppress connection/TLS failures on port probes
                     }
                 }
             }

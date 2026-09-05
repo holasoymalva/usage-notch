@@ -224,7 +224,7 @@ public struct ExpandedShelfView: View {
                 ))
             }
         }
-        .frame(width: 430, height: max(dockHeight + 160, 500), alignment: .topLeading)
+        .frame(width: 430, height: max(dockHeight, 360), alignment: .topLeading)
     }
     
     // MARK: - Right Edge Layout
@@ -337,7 +337,7 @@ public struct ExpandedShelfView: View {
                 contextMenuItems
             }
         }
-        .frame(width: 430, height: max(dockHeight + 160, 500), alignment: .topTrailing)
+        .frame(width: 430, height: max(dockHeight, 360), alignment: .topTrailing)
     }
     
     // MARK: - Top Notch Layout

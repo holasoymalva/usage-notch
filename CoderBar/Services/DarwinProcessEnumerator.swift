@@ -13,6 +13,7 @@ public struct DiscoveredAntigravityProcess: Sendable {
     public let executablePath: String
     public let commandLine: String
     public let extensionServerPort: Int?
+    public let hostBridgePort: Int?
     public let extensionServerCsrfToken: String?
     public let csrfToken: String?
     public let listeningPorts: [Int]
@@ -22,6 +23,7 @@ public struct DiscoveredAntigravityProcess: Sendable {
         executablePath: String,
         commandLine: String,
         extensionServerPort: Int? = nil,
+        hostBridgePort: Int? = nil,
         extensionServerCsrfToken: String? = nil,
         csrfToken: String? = nil,
         listeningPorts: [Int] = []
@@ -30,6 +32,7 @@ public struct DiscoveredAntigravityProcess: Sendable {
         self.executablePath = executablePath
         self.commandLine = commandLine
         self.extensionServerPort = extensionServerPort
+        self.hostBridgePort = hostBridgePort
         self.extensionServerCsrfToken = extensionServerCsrfToken
         self.csrfToken = csrfToken
         self.listeningPorts = listeningPorts
@@ -93,6 +96,16 @@ public enum DarwinProcessEnumerator {
         let sub = text[range.upperBound...]
         let token = sub.prefix { $0 != " " && $0 != "\"" && $0 != "'" }
         return token.isEmpty ? nil : String(token)
+    }
+    
+    public static func extractHostBridgePort(from text: String) -> Int? {
+        guard let range = text.range(of: "--host_bridge_url=") ?? text.range(of: "--host_bridge_url ") else { return nil }
+        let sub = text[range.upperBound...]
+        let token = sub.prefix { $0 != " " && $0 != "\"" && $0 != "'" }
+        if let url = URL(string: String(token)), let port = url.port {
+            return port
+        }
+        return nil
     }
     
     public static func fallbackListeningPortsViaLsof(pid: Int32) -> [Int] {
@@ -271,6 +284,15 @@ extension DarwinProcessEnumerator {
             if let p = extPort, !ports.contains(p) {
                 ports.append(p)
             }
+            let hostBridgePort = extractHostBridgePort(from: cmd)
+            if let bp = hostBridgePort {
+                // The language server HTTPS and HTTP endpoints run on bridgePort + 1 and bridgePort + 2!
+                let highPriority = [bp + 2, bp + 1, bp]
+                for p in highPriority.reversed() {
+                    ports.removeAll(where: { $0 == p })
+                    ports.insert(p, at: 0)
+                }
+            }
             let extCsrf = extractStringFlag(flag: "--extension_server_csrf_token", from: cmd)
             let csrf = extractStringFlag(flag: "--csrf_token", from: cmd)
             
@@ -279,6 +301,7 @@ extension DarwinProcessEnumerator {
                 executablePath: path,
                 commandLine: cmd,
                 extensionServerPort: extPort,
+                hostBridgePort: hostBridgePort,
                 extensionServerCsrfToken: extCsrf,
                 csrfToken: csrf,
                 listeningPorts: ports

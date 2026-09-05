@@ -22,26 +22,26 @@ final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
         let manager = UsageManager.shared
         guard manager.isHudVisible else { return nil }
         
-        let dockW: CGFloat = 76
+        // Convert from window coordinate space to view's local coordinate space
+        let localPoint = convert(point, from: nil)
+        let dockW: CGFloat = 78
         let count = CGFloat(manager.providers.filter { $0.isEnabled }.count + 1)
         let safeCount = max(1, count)
         let dockH = 48.0 + (safeCount * 64.0) + (max(0, safeCount - 1) * 16.0) + 48.0
         
-        // Handle both flipped and unflipped coordinates (effective distance from top of hosting view)
-        let effectiveYFromTop = isFlipped ? point.y : (bounds.height - point.y)
         let isAnyPopoverOpen = manager.selectedProviderId != nil || manager.isSettingsPopoverOpen
         
         switch manager.position {
         case .leftEdge:
-            // Check if point is inside the dock
-            if point.x >= 0 && point.x <= dockW && effectiveYFromTop >= 0 && effectiveYFromTop <= dockH {
+            // Check if point is inside the dock flap
+            if localPoint.x >= 0 && localPoint.x <= dockW && localPoint.y >= 0 && localPoint.y <= dockH {
                 return super.hitTest(point)
             }
             // Check if popover is visible and point is inside popover card
             if isAnyPopoverOpen {
                 let popoverMinX: CGFloat = 66
                 let popoverMaxX: CGFloat = 66 + 345
-                if point.x >= popoverMinX && point.x <= popoverMaxX && effectiveYFromTop >= 0 && effectiveYFromTop <= max(dockH + 160, 500) {
+                if localPoint.x >= popoverMinX && localPoint.x <= popoverMaxX && localPoint.y >= 0 && localPoint.y <= bounds.height {
                     return super.hitTest(point)
                 }
             }
@@ -49,13 +49,13 @@ final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
             
         case .rightEdge:
             let dockMinX = bounds.width - dockW
-            if point.x >= dockMinX && point.x <= bounds.width && effectiveYFromTop >= 0 && effectiveYFromTop <= dockH {
+            if localPoint.x >= dockMinX && localPoint.x <= bounds.width && localPoint.y >= 0 && localPoint.y <= dockH {
                 return super.hitTest(point)
             }
             if isAnyPopoverOpen {
                 let popoverMaxX = bounds.width - 66
                 let popoverMinX = bounds.width - 66 - 345
-                if point.x >= popoverMinX && point.x <= popoverMaxX && effectiveYFromTop >= 0 && effectiveYFromTop <= max(dockH + 160, 500) {
+                if localPoint.x >= popoverMinX && localPoint.x <= popoverMaxX && localPoint.y >= 0 && localPoint.y <= bounds.height {
                     return super.hitTest(point)
                 }
             }
@@ -185,7 +185,7 @@ public final class NotchOverlayController: NSObject {
     
     public func repositionPanels() {
         guard let panel = overlayPanel,
-              let screen = NSScreen.main else { return }
+              let screen = NSScreen.main ?? NSScreen.screens.first else { return }
         
         let manager = UsageManager.shared
         guard manager.isHudVisible else {
@@ -198,7 +198,7 @@ public final class NotchOverlayController: NSObject {
         let vOffset = CGFloat(manager.verticalOffset)
         let dockH = calculatedDockHeight
         let totalW: CGFloat = 430
-        let totalH: CGFloat = max(dockH + 160, 500)
+        let totalH: CGFloat = max(dockH, 360)
         
         var frame = NSRect.zero
         
@@ -218,7 +218,8 @@ public final class NotchOverlayController: NSObject {
             
             let y = max(visibleFrame.minY, min(visibleFrame.maxY - dockH, baseY + vOffset))
             let finalY = y + dockH - totalH
-            frame = NSRect(x: x, y: finalY, width: totalW, height: totalH)
+            let safeFinalY = max(visibleFrame.minY, min(visibleFrame.maxY - totalH, finalY))
+            frame = NSRect(x: x, y: safeFinalY, width: totalW, height: totalH)
             
         case .rightEdge:
             let x = screenFrame.maxX - totalW
@@ -235,7 +236,8 @@ public final class NotchOverlayController: NSObject {
             
             let y = max(visibleFrame.minY, min(visibleFrame.maxY - dockH, baseY + vOffset))
             let finalY = y + dockH - totalH
-            frame = NSRect(x: x, y: finalY, width: totalW, height: totalH)
+            let safeFinalY = max(visibleFrame.minY, min(visibleFrame.maxY - totalH, finalY))
+            frame = NSRect(x: x, y: safeFinalY, width: totalW, height: totalH)
             
         case .topNotch:
             let notchW: CGFloat = 460
@@ -245,8 +247,6 @@ public final class NotchOverlayController: NSObject {
             frame = NSRect(x: x, y: y, width: notchW, height: notchH)
         }
         
-        DispatchQueue.main.async {
-            panel.setFrame(frame, display: true, animate: false)
-        }
+        panel.setFrame(frame, display: true, animate: false)
     }
 }
