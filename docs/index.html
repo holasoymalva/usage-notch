@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Usage Notch (CoderBar)</title>
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --card-bg: #181b21;
+            --text-primary: #f0f3f6;
+            --text-secondary: #9ea7b3;
+            --accent: #05e67c;
+            --border: #292e38;
+            --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-color: #f7f9fb;
+                --card-bg: #ffffff;
+                --text-primary: #1a1d24;
+                --text-secondary: #5f6b7c;
+                --accent: #00994f;
+                --border: #e2e6eb;
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 48px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--accent);
+            background: rgba(5, 230, 124, 0.12);
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0 0 8px 0;
+        }
+
+        .meta {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 36px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 8px;
+        }
+
+        p, li {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        strong {
+            color: var(--text-primary);
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .highlight-box {
+            background: rgba(5, 230, 124, 0.08);
+            border-left: 4px solid var(--accent);
+            padding: 16px 20px;
+            border-radius: 0 10px 10px 0;
+            margin: 24px 0;
+        }
+
+        .highlight-box p {
+            margin: 0;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        footer {
+            margin-top: 48px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="badge">Privacy Policy</div>
+        <h1>Usage Notch (CoderBar)</h1>
+        <div class="meta">Effective Date: September 5, 2026 • Last Updated: September 5, 2026</div>
+
+        <div class="highlight-box">
+            <p><strong>Privacy Commitment:</strong> Usage Notch is a privacy-first, local-first macOS utility designed with zero user tracking, zero analytics, and zero telemetry.</p>
+        </div>
+
+        <h2>1. Summary: Our Core Privacy Commitment</h2>
+        <ul>
+            <li><strong>No Tracking or Telemetry:</strong> We do not collect, track, log, profile, or sell any personal data, usage metrics, device identifiers, or analytics.</li>
+            <li><strong>Local-Only Storage:</strong> All credentials, session tokens, and configuration preferences remain stored strictly on your local Mac.</li>
+            <li><strong>Direct API Communication:</strong> Any requests to third-party services (such as Cursor, Anthropic, Google, or OpenAI) are made directly from your Mac to those providers. We operate no intermediary servers, proxy servers, or data collection infrastructure.</li>
+        </ul>
+
+        <h2>2. Information We Handle and How It Is Used</h2>
+        <h3>A. API Keys and Authentication Tokens</h3>
+        <p>To display your real-time AI quota and token consumption, the Application allows you to configure API keys or session tokens (e.g., Cursor session tokens, Anthropic API keys, Google Gemini keys, OpenRouter keys):</p>
+        <ul>
+            <li><strong>Storage:</strong> Stored locally on your Mac using standard macOS local application storage.</li>
+            <li><strong>Transmission:</strong> Transmitted solely and securely via direct, encrypted HTTPS requests from your machine to the respective official API endpoints.</li>
+            <li><strong>No Third-Party Access:</strong> These credentials are never transmitted to us, never relayed through any proxy server, and never shared with third parties.</li>
+        </ul>
+
+        <h3>B. Local Developer Tool Detection (Antigravity, Ollama, etc.)</h3>
+        <p>When checking status for locally running services (such as Google Antigravity or Ollama):</p>
+        <ul>
+            <li>The Application inspects local process tables and local loopback sockets (<code>127.0.0.1</code> / <code>localhost</code>) via standard Darwin kernel APIs.</li>
+            <li>All queries and responses stay entirely on your local machine. No local socket data or process information is ever transmitted across the internet.</li>
+        </ul>
+
+        <h3>C. Usage & Quota Metrics</h3>
+        <p>Metrics retrieved from configured providers (such as remaining fast requests, session percentages, or reset countdowns) are kept in memory and local storage solely to render the UI. We do not aggregate, log, or analyze this data.</p>
+
+        <h2>3. Third-Party Services and Endpoints</h2>
+        <p>When you configure a provider in Usage Notch, the Application interacts directly with that provider's public API on your behalf:</p>
+        <ul>
+            <li><a href="https://www.cursor.com/privacy" target="_blank" rel="noopener">Cursor Privacy Policy</a></li>
+            <li><a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">Anthropic (Claude) Privacy Policy</a></li>
+            <li><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google (Antigravity / Gemini) Privacy Policy</a></li>
+            <li><a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">OpenRouter Privacy Policy</a></li>
+            <li><a href="https://openai.com/privacy" target="_blank" rel="noopener">OpenAI Privacy Policy</a></li>
+        </ul>
+        <p>Your interactions with these services are governed by their respective privacy policies and terms of service.</p>
+
+        <h2>4. Data Retention and Deletion</h2>
+        <ul>
+            <li>You have complete control over your data.</li>
+            <li>You can remove any API key, session token, or provider configuration at any time directly in the Application preferences (<strong>Settings / Preferencias</strong>).</li>
+            <li>Deleting the Application or clearing its application data from macOS permanently removes all stored keys, preferences, and cached metrics from your machine.</li>
+        </ul>
+
+        <h2>5. Children's Privacy</h2>
+        <p>Usage Notch does not knowingly collect or solicit any personal information from children under the age of 13. The Application is a developer tool that collects no personal data from any user.</p>
+
+        <h2>6. Security</h2>
+        <p>We take the security of your local configuration seriously. The Application relies on native macOS sandboxing principles and secure HTTPS (TLS 1.3/1.2) encryption for all network communication with supported provider APIs.</p>
+
+        <h2>7. Contact Information</h2>
+        <p>If you have questions, feedback, or privacy-related concerns regarding Usage Notch, please contact us:</p>
+        <ul>
+            <li><strong>GitHub Repository:</strong> <a href="https://github.com/holasoymalva/usage-notch" target="_blank" rel="noopener">https://github.com/holasoymalva/usage-notch</a></li>
+            <li><strong>Issue Tracker:</strong> <a href="https://github.com/holasoymalva/usage-notch/issues" target="_blank" rel="noopener">https://github.com/holasoymalva/usage-notch/issues</a></li>
+            <li><strong>Developer:</strong> Martin Manriquez (malvaLab)</li>
+        </ul>
+
+        <footer>
+            <p>© 2026 malvaLab. Compliant with Apple App Store Review Guideline 5.1.1 (Data Collection and Storage).</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -43,6 +43,14 @@ Built with 100% native Swift & SwiftUI for MacBook power users and developers. C
 
 ---
 
+## 🔒 Privacy Policy
+
+Usage Notch is built with a strict **privacy-first, local-first** architecture. We collect zero personal data, zero analytics, and zero telemetry. All API credentials and usage metrics remain stored exclusively on your Mac.
+
+Read the full [Privacy Policy](PRIVACY_POLICY.md) (compliant with Apple App Store Review Guideline 5.1.1).
+
+---
+
 ## 📄 License
 
 MIT License. Crafted for developers.
